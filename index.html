@@ -755,6 +755,32 @@ body.chart-fs-active #candleSection {
   background: var(--panel); border: 1px solid var(--border);
   border-radius: 12px; margin-bottom: 14px; overflow: hidden;
 }
+
+/* Drawing Tools */
+.chart-draw-toolbar {
+  display: flex; align-items: center; gap: 2px;
+  padding: 4px 8px; background: var(--panel3);
+  border-top: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+.draw-tool-btn {
+  display: flex; align-items: center; gap: 5px;
+  padding: 5px 10px; border-radius: 5px;
+  background: var(--panel2); border: 1px solid var(--border);
+  color: var(--muted); cursor: pointer;
+  font-family: var(--font-mono); font-size: 10px;
+  transition: all .15s; white-space: nowrap;
+}
+.draw-tool-btn:hover { border-color: var(--accent); color: var(--accent); }
+.draw-tool-btn.active { background: rgba(0,201,255,.15); border-color: var(--accent); color: var(--accent); }
+.draw-tool-btn .tool-icon { font-size: 13px; }
+#drawingCanvas {
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+  pointer-events: none; z-index: 10;
+}
+#drawingCanvas.draw-active { pointer-events: all; cursor: crosshair; }
+#drawingCanvas.draw-eraser { cursor: cell; }
+#drawingCanvas.draw-arrow  { cursor: default; }
 .candle-select-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; padding: 12px 18px; background: var(--panel2); border-bottom: 1px solid var(--border); }
 /* TF buttons */
 .tf-btn { background:var(--panel3);border:1px solid var(--border2);color:var(--muted);padding:4px 9px;border-radius:4px;cursor:pointer;font-family:var(--font-mono);font-size:10px;letter-spacing:.3px;transition:all .15s; }
@@ -1646,6 +1672,32 @@ tr.atm-row td.strike-cell { color:var(--accent); }
     </div>
 </div>
 
+<!-- ══ CE/PE RATIO TURNING POINT PANEL ══ -->
+<div id="cePeRatioPanel" style="margin:10px 16px;background:linear-gradient(135deg,#0d1f2e 0%,#070b12 100%);border:1px solid var(--border);border-radius:12px;padding:14px 18px;display:none;">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+    <div>
+      <div style="font-family:var(--font-disp);font-size:16px;letter-spacing:2px;color:var(--accent);">⚖ CE/PE RATIO — TURNING POINT DETECTOR</div>
+      <div style="font-family:var(--font-mono);font-size:9px;color:var(--muted);margin-top:2px;letter-spacing:.5px;">
+        PE heavy (ratio&lt;0.87) = 🟢 BOTTOM near → BUY CE &nbsp;|&nbsp; CE heavy (ratio&gt;1.15) = 🔴 TOP near → EXIT CE / BUY PE &nbsp;|&nbsp; Balanced (0.95-1.05) = ↔ SIDEWAYS
+      </div>
+    </div>
+    <div id="cePeRatioSignal" style="font-family:var(--font-mono);font-size:11px;font-weight:bold;padding:4px 12px;border-radius:12px;background:rgba(0,201,255,.1);border:1px solid rgba(0,201,255,.3);color:var(--accent);white-space:nowrap;">LOADING</div>
+  </div>
+  <!-- Ratio bar visual -->
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+    <span style="font-family:var(--font-mono);font-size:10px;color:var(--red);width:60px;text-align:right;">CE ₹<span id="ceLtpDisp">—</span></span>
+    <div style="flex:1;height:20px;background:var(--panel3);border-radius:10px;overflow:hidden;position:relative;">
+      <div id="ceBar" style="position:absolute;left:0;top:0;height:100%;background:linear-gradient(90deg,#00e5a0,#00c896);border-radius:10px;transition:width 0.5s;"></div>
+      <div id="peBar" style="position:absolute;right:0;top:0;height:100%;background:linear-gradient(270deg,#ff3d6b,#ff6b8a);border-radius:10px;transition:width 0.5s;"></div>
+      <div style="position:absolute;left:50%;top:0;bottom:0;width:1px;background:rgba(255,255,255,0.2);"></div>
+    </div>
+    <span style="font-family:var(--font-mono);font-size:10px;color:var(--green);width:60px;">PE ₹<span id="peLtpDisp">—</span></span>
+  </div>
+  <div id="cePeRatioDetail" style="font-family:var(--font-mono);font-size:11px;color:var(--muted);line-height:1.8;"></div>
+  <!-- Bottom/Top signal history -->
+  <div id="cePeHistory" style="margin-top:8px;max-height:80px;overflow-y:auto;font-family:var(--font-mono);font-size:10px;color:var(--muted);"></div>
+</div>
+
 
 <!-- ══ BUYER vs SELLER ADVISOR ══════════════════════════ -->
 <div id="bsAdvisorWrap" style="margin:10px 16px;border-radius:12px;overflow:hidden;border:1px solid var(--border);display:none;">
@@ -2246,6 +2298,33 @@ tr.atm-row td.strike-cell { color:var(--accent); }
     <!-- Main chart canvas -->
     <div id="emaChartWrap" style="position:relative;padding:0 8px 8px;touch-action:none;user-select:none;-webkit-user-select:none;">
       <canvas id="candleCanvas" style="display:block;width:100%;height:360px;touch-action:none;"></canvas>
+      <canvas id="drawingCanvas" width="100%" height="360" style="position:absolute;top:0;left:8px;right:8px;height:360px;pointer-events:none;"></canvas>
+    </div>
+
+    <!-- Drawing Tools Bar -->
+    <div class="chart-draw-toolbar" id="drawToolbar">
+      <span style="font-family:var(--font-mono);font-size:9px;color:var(--muted);letter-spacing:1px;padding-right:4px;">TOOLS:</span>
+      <button class="draw-tool-btn active" id="tool_cross" onclick="setDrawTool('cross')">
+        <span class="tool-icon">✛</span> Cross
+      </button>
+      <button class="draw-tool-btn" id="tool_hline" onclick="setDrawTool('hline')">
+        <span class="tool-icon">─</span> H-Line
+      </button>
+      <button class="draw-tool-btn" id="tool_tline" onclick="setDrawTool('tline')">
+        <span class="tool-icon">╱</span> Trend
+      </button>
+      <button class="draw-tool-btn" id="tool_arrow" onclick="setDrawTool('arrow')">
+        <span class="tool-icon">↗</span> Arrow
+      </button>
+      <button class="draw-tool-btn" id="tool_dot" onclick="setDrawTool('dot')">
+        <span class="tool-icon">•</span> Dot
+      </button>
+      <button class="draw-tool-btn" id="tool_eraser" onclick="setDrawTool('eraser')">
+        <span class="tool-icon">⌫</span> Eraser
+      </button>
+      <div style="flex:1"></div>
+      <button onclick="clearAllDrawings()" style="background:rgba(255,61,107,.1);border:1px solid rgba(255,61,107,.3);color:var(--red);padding:4px 10px;border-radius:4px;cursor:pointer;font-family:var(--font-mono);font-size:9px;">✕ CLEAR</button>
+      <span id="drawTooltip" style="font-family:var(--font-mono);font-size:9px;color:var(--muted);padding-left:8px;"></span>
     </div>
 
     <!-- Backtest panel (below chart) -->
@@ -4225,6 +4304,7 @@ function runMarketIntelligence() {
     rsiVal ? `RSI ${rsiVal.toFixed(0)} → ${rsiVal>60?'✅ Bullish zone':rsiVal<40?'❌ Bearish zone':'➡ Neutral'}` : 'RSI → Chart load karo',
     `IV Env → ${atmCEiv>25?'🔴 >25% SELLER DAY':atmCEiv>18?'⚠️ 18-25% Risky':'✅ <18% Buyer Safe'} (${atmCEiv.toFixed(0)}%)`,
     `EMA Flips → ${(window._emaFlipCount||0)>=8?'↔ CHOPPY ('+(window._emaFlipCount||0)+'x flip) NO TRADE':'✅ Stable ('+(window._emaFlipCount||0)+'x flip)'}`,
+    (() => { const atmR2=chainData?.find(d=>d.strike_price===Math.round((chainData[0]?.underlying_spot_price||0)/((INSTRUMENTS[document.getElementById('symbolSel')?.value]?.step)||50))*((INSTRUMENTS[document.getElementById('symbolSel')?.value]?.step)||50)); const c2=atmR2?.call_options?.market_data?.ltp||0; const p2=atmR2?.put_options?.market_data?.ltp||0; const r2=c2>0&&p2>0?c2/p2:1; return r2>1.15?`🔴 CE/PE=${r2.toFixed(2)} CE HEAVY → TOP near. Exit CE, consider PE`:r2<0.87?`🟢 CE/PE=${r2.toFixed(2)} PE HEAVY → BOTTOM near. BUY CE opportunity!`:`↔ CE/PE=${r2.toFixed(2)} Balanced`; })(),
     spotMomo !== 0 ? `Spot Momo (4min) → ${spotMomo>200?'🚀 STRONG BULL +'+spotMomo.toFixed(0):spotMomo<-200?'📉 STRONG BEAR '+spotMomo.toFixed(0):spotMomo>0?'+'+spotMomo.toFixed(0):spotMomo.toFixed(0)} pts` : 'Spot Momo → Loading...',
   ].map(f => `<span style="display:inline-block;background:rgba(0,0,0,.2);border-radius:4px;padding:2px 8px;font-size:11px;margin:2px;font-family:var(--font-mono);">${f}</span>`).join('');
 
@@ -5738,6 +5818,151 @@ window._spotHistory  = [];   // last 10 spot prices for momentum
 window._emaFlipLog  = [];   // EMA bias history for choppy detection
 window._emaFlipCount = 0;   // how many times EMA flipped today
 
+// CE/PE History for turning point tracking
+window._cePeHistory = [];
+window._lastCePeSignal = '';
+
+function updateCePeRatioPanel() {
+  if (!chainData || !chainData.length) return;
+  const panel = document.getElementById('cePeRatioPanel');
+  if (panel) panel.style.display = 'block';
+  
+  const instrKey = document.getElementById('symbolSel')?.value || '';
+  const step     = INSTRUMENTS[instrKey]?.step || 50;
+  const spot     = chainData[0]?.underlying_spot_price || 0;
+  const atm      = Math.round(spot / step) * step;
+  const atmRow   = chainData.find(d => d.strike_price === atm);
+  
+  if (!atmRow) return;
+  const ce  = atmRow.call_options?.market_data?.ltp  || 0;
+  const pe  = atmRow.put_options?.market_data?.ltp   || 0;
+  const pcr = (() => {
+    let tc=0,tp=0;
+    chainData.forEach(d=>{tc+=d.call_options?.market_data?.oi||0; tp+=d.put_options?.market_data?.oi||0;});
+    return tc>0 ? tp/tc : 1;
+  })();
+  
+  if (!ce || !pe) return;
+  const ratio = ce / pe;
+  
+  // RSI from EMA chart
+  let rsi = 50;
+  if (emaAllCandles.length > 14) {
+    const cs = emaAllCandles.map(c=>c[4]);
+    const ra = calcRSI(cs, 14);
+    rsi = ra[ra.length-1] || 50;
+  }
+  
+  const emaBias = (() => {
+    if (emaAllCandles.length>5) {
+      const cs=emaAllCandles.map(c=>c[4]); const os=emaAllCandles.map(c=>c[1]);
+      const ec=calcEMA(cs,6); const eo=calcEMA(os,6); const li=emaAllCandles.length-1;
+      return ec[li]>eo[li]?'BULLISH':'BEARISH';
+    }
+    return document.getElementById('sentTrendVal')?.textContent||'NEUTRAL';
+  })();
+  
+  // ── Signal logic from 8-day data ──
+  let signal = '', signalColor = 'var(--accent)', signalBg = 'rgba(0,201,255,.1)', detail = '';
+  const now = new Date();
+  const ist = new Date(now.getTime()+5.5*60*60*1000);
+  const timeStr = ist.toISOString().slice(11,16);
+  
+  // TURNING POINT SIGNALS
+  const ceHeavy  = ratio > 1.15;   // CE >> PE = top near (8-day: confirmed)
+  const peHeavy  = ratio < 0.87;   // PE >> CE = bottom near (8-day: confirmed)
+  const balanced = ratio >= 0.95 && ratio <= 1.05;  // sideways
+  const mildCe   = ratio > 1.05 && ratio <= 1.15;   // slight CE bias
+  const mildPe   = ratio >= 0.87 && ratio < 0.95;   // slight PE bias
+  
+  // 2-candle early warning: check PCR trend
+  if (!window._cePeHistory) window._cePeHistory = [];
+  const prevRatio = window._cePeHistory.length ? window._cePeHistory[window._cePeHistory.length-1].ratio : ratio;
+  const ratioFalling = ratio < prevRatio - 0.03;  // CE losing vs PE = bearish shift
+  const ratioRising  = ratio > prevRatio + 0.03;  // CE gaining vs PE = bullish shift
+  
+  if (ceHeavy) {
+    signal = '🔴 CE HEAVY — TOP NEAR';
+    signalColor = '#ff3d6b'; signalBg = 'rgba(255,61,107,.12)';
+    detail = `CE ₹${ce.toFixed(1)} >> PE ₹${pe.toFixed(1)} (ratio ${ratio.toFixed(3)}) — CE overpriced. 8-day: spot likely to FALL next 2-5 candles.<br>` +
+             `⚠ EXIT CE positions. Consider PE buy if EMA confirms bear.`;
+  } else if (peHeavy) {
+    signal = '🟢 PE HEAVY — BOTTOM NEAR';
+    signalColor = '#00e5a0'; signalBg = 'rgba(0,229,160,.12)';
+    detail = `PE ₹${pe.toFixed(1)} >> CE ₹${ce.toFixed(1)} (ratio ${ratio.toFixed(3)}) — PE overpriced. 8-day: spot likely to RISE next 2-5 candles.<br>` +
+             `✅ BUY CE opportunity. 10-Apr 09:16 → ratio 0.86 → spot +130pts!`;
+  } else if (balanced) {
+    signal = '↔ BALANCED — SIDEWAYS';
+    signalColor = 'var(--yellow)'; signalBg = 'rgba(255,208,0,.08)';
+    const cheaperSide = ce < pe ? `CE ₹${ce.toFixed(1)} sasta` : `PE ₹${pe.toFixed(1)} sasta`;
+    detail = `CE ≈ PE (ratio ${ratio.toFixed(3)}) — Range bound market. RSI ${rsi.toFixed(0)}.<br>` +
+             `Strategy: ${cheaperSide} kharido. Exit when ratio crosses 1.12 ya 0.88.`;
+  } else if (mildCe) {
+    signal = ratioRising ? '⚠ CE RISING — WATCH TOP' : '📈 MILD CE BIAS';
+    signalColor = ratioRising ? '#ff9f40' : 'var(--green)'; signalBg = 'rgba(255,159,64,.08)';
+    detail = `Ratio ${ratio.toFixed(3)} — CE slightly heavy. ${ratioRising?'Ratio rising fast — top forming soon. Watch for exit.':'Mild bullish bias. Not extreme yet.'}`;
+  } else if (mildPe) {
+    signal = ratioFalling ? '⚠ CE FALLING — WATCH BOTTOM' : '📉 MILD PE BIAS';
+    signalColor = ratioFalling ? '#ff9f40' : 'var(--red)'; signalBg = 'rgba(255,107,0,.08)';
+    detail = `Ratio ${ratio.toFixed(3)} — PE slightly heavy. ${ratioFalling?'Ratio falling fast — bottom forming. Watch for entry.':'Mild bearish bias.'}`;
+  }
+  
+  // ── 2-CANDLE PRE-WARNING ──
+  // RSI confirms: RSI>65 + CE heavy = strong top signal
+  //               RSI<45 + PE heavy = strong bottom signal
+  let preWarn = '';
+  if (ratio > 1.08 && rsi > 65) {
+    preWarn = ` <b style="color:#ff3d6b;">⚡ RSI ${rsi.toFixed(0)}>65 + CE heavy = TOP signal! 2 candles mein girna possible.</b>`;
+  } else if (ratio < 0.93 && rsi < 45) {
+    preWarn = ` <b style="color:#00e5a0;">⚡ RSI ${rsi.toFixed(0)}<45 + PE heavy = BOTTOM signal! 2 candles mein uthna possible.</b>`;
+  } else if (ratio > 1.08 && emaBias === 'BEARISH') {
+    preWarn = ` <b style="color:#ff9f40;">⚠ CE heavy + EMA BEAR = top confirmation. Exit CE longs.</b>`;
+  } else if (ratio < 0.93 && emaBias === 'BULLISH') {
+    preWarn = ` <b style="color:#00c896;">✅ PE heavy + EMA BULL = bottom confirmation. CE entry ok.</b>`;
+  }
+  
+  // Update history
+  window._cePeHistory.push({ time:timeStr, ratio, ce, pe, signal, rsi, pcr });
+  if (window._cePeHistory.length > 20) window._cePeHistory.shift();
+  
+  // Log new signals
+  const newSig = ceHeavy ? 'TOP' : peHeavy ? 'BOTTOM' : balanced ? 'SIDE' : 'MID';
+  if (newSig !== window._lastCePeSignal && (ceHeavy||peHeavy)) {
+    logNotif(`CE/PE: ${signal} @ ${timeStr} ratio=${ratio.toFixed(3)}`);
+    window._lastCePeSignal = newSig;
+  }
+  
+  // ── Update DOM ──
+  const el = id => document.getElementById(id);
+  if (el('ceLtpDisp')) el('ceLtpDisp').textContent = ce.toFixed(1);
+  if (el('peLtpDisp')) el('peLtpDisp').textContent = pe.toFixed(1);
+  
+  // Ratio bar: CE bar from left, PE bar from right
+  const ceW = Math.min(48, ratio > 1 ? 48 : ratio * 48);
+  const peW = Math.min(48, ratio < 1 ? 48 : (1/ratio)*48);
+  if (el('ceBar')) el('ceBar').style.width = ceW + '%';
+  if (el('peBar')) el('peBar').style.width = peW + '%';
+  
+  if (el('cePeRatioSignal')) {
+    el('cePeRatioSignal').textContent = signal || 'NEUTRAL';
+    el('cePeRatioSignal').style.color = signalColor;
+    el('cePeRatioSignal').style.background = signalBg;
+    el('cePeRatioSignal').style.borderColor = signalColor + '44';
+  }
+  
+  if (el('cePeRatioDetail')) {
+    el('cePeRatioDetail').innerHTML = detail + preWarn;
+    el('cePeRatioDetail').style.color = signalColor;
+  }
+  
+  // History log (last 5 signals)
+  const histHtml = window._cePeHistory.slice(-6).reverse().map(h => 
+    `<span style="color:${h.ratio>1.12?'#ff3d6b':h.ratio<0.88?'#00e5a0':'var(--muted)'}">` +
+    `${h.time} ratio=${h.ratio.toFixed(3)} CE=${h.ce.toFixed(0)} PE=${h.pe.toFixed(0)} RSI=${h.rsi.toFixed(0)}</span>`
+  ).join('<br>');
+  if (el('cePeHistory')) el('cePeHistory').innerHTML = histHtml;
+}
+
 function updateOptionsBattle() {
   if (!chainData || !chainData.length) return;
   const spot = chainData[0]?.underlying_spot_price || 0;
@@ -5823,6 +6048,9 @@ function updateOptionsBattle() {
     const isChoppy  = flipCount >= 8;   // 8+ flips = choppy (7-day data confirms)
     if(liveIV > 25){
       status=`🔴 SELLER DAY — IV ${liveIV.toFixed(0)}% > 25%. Buying avoid karo.`;color='#ff3d6b';
+    } else if(liveIV > 15 && liveIV <= 18) {
+      // NEW: 15-18% = VERY RISKY (44% win) - worse than 18-25%!
+      status=`🔴 VERY RISKY ZONE — IV ${liveIV.toFixed(0)}% (15-18%). CE sirf 44% win!`;color='#ff4400';
     } else if(peWriters>ceWriters*1.5&&ceMomo<-0.15){status='⚠️ SWING ALERT: EXIT LONGS — Spot girne laga';color='#ff9f40';}
     else if(peWriters>ceWriters*2.2&&ceMomo>0&&liveIV<18){status=`🚀 CE BUYING: ${atm} CE @ ₹${cLTP.toFixed(2)}`;tag=' (IV ok + Trend ↑)';color='#00e5a0';}
     else if(peWriters>ceWriters*1.5&&ceMomo>=0&&liveIV<25){status=`📈 BULLISH BIAS: ${atm} CE consider karo`;tag=' (watch IV)';color='#00c896';}
@@ -6402,18 +6630,27 @@ function runBuyerSellerAdvisor() {
   // Expiry day: IV 33-45%, Theta 400-870
   // Normal day (DTE 1-3): IV 28-32%, Theta 210-243
   // Buyer safe only when IV < 18%
-  const thetaLimit = dte === 0 ? 350 : dte === 1 ? 180 : 150;
-  const ivSellerLimit = 25;   // IV > 25% = seller dominant any day
-  const ivBuyerSafe   = 18;   // IV < 18% = relatively safe zone
+  // === 8-DAY DATA THRESHOLDS (867 rows) ===
+  // IV<15=83% win | IV 15-18=44%(VERY RISKY) | IV 18-25=53%(RISKY) | IV>25=41%(SELLER) | DTE=0=36%
+  // SELL PE: IV>25+BULL+PCR>1.1 = 82% win (UPGRADED!)
+  const thetaLimit    = dte === 0 ? 350 : dte === 1 ? 180 : 150;
+  const ivSellerLimit = 25;   // >25 → SELLER DAY
+  const ivBuyerSafe   = 15;   // <15 → BUY (83% win)
+  const ivVeryRisky   = 18;   // 15-18 → VERY RISKY (44% win — WORSE than 18-25!)
+  const ivRiskyTop    = 25;   // 18-25 → RISKY zone (53% marginal)
+  const ivSellCE      = 25;   // >25+BEAR+PCR<0.9 → SELL CE (57%)
+  const ivSellPE      = 25;   // >25+BULL+PCR>1.1 → SELL PE (82%)
+  const ivStrong      = 35;   // >35 → STRONG SELLER (61%)
 
   let sellerScore = 0;
   const sellerFlags = [];
 
-  // 6-day data: IV<15=83% win, 15-25=53% coin flip, >25=36-40% buyer win
-  if (ce_iv > 35)        { sellerScore += 3; sellerFlags.push(`🔴 IV ${ce_iv.toFixed(0)}%>35 — STRONG SELLER (64% win). Short straddle.`); }
-  else if (ce_iv > 25)   { sellerScore += 2; sellerFlags.push(`🔴 IV ${ce_iv.toFixed(0)}%>25 — SELLER DAY. Buyers 36-40% only.`); }
-  else if (ce_iv > 15)   { sellerScore++;    sellerFlags.push(`⚠️ IV ${ce_iv.toFixed(0)}% RISKY ZONE (15-25%). 53% win = coin flip.`); }
-  else if (ce_iv > 0)    { buyerScore++;     buyerFlags.push(`✅ IV ${ce_iv.toFixed(0)}%<15 — BUY ZONE! 6-day: 83% win rate.`); }
+  // 8-day data (867 rows)
+  if (ce_iv > 35)        { sellerScore += 3; sellerFlags.push(`🔴 IV ${ce_iv.toFixed(0)}%>35 — STRONG SELLER (61% sell win). Short straddle.`); }
+  else if (ce_iv > 25)   { sellerScore += 2; sellerFlags.push(`🔴 IV ${ce_iv.toFixed(0)}%>25 — SELLER DAY. CE/PE 41-42%. SELL PE 82% win!`); }
+  else if (ce_iv > 18)   { sellerScore++;    sellerFlags.push(`⚠️ IV ${ce_iv.toFixed(0)}% RISKY (18-25%). CE 53% marginal. PCR>1.15+BULL needed.`); }
+  else if (ce_iv > 15)   { sellerScore += 2; sellerFlags.push(`🔴 IV ${ce_iv.toFixed(0)}% VERY RISKY (15-18%). CE only 44%! Worse than 18-25% zone!`); }
+  else if (ce_iv > 0)    { buyerScore += 2;  buyerFlags.push(`✅ IV ${ce_iv.toFixed(0)}%<15 — BUY ZONE! 8-day: 83% win avg +69.`); }
 
   if (ce_theta > thetaLimit) { sellerScore++; sellerFlags.push(`❌ Theta ${ce_theta.toFixed(0)} > ${thetaLimit} (DTE=${dte})`); }
   else { sellerFlags.push(`✅ Theta ${ce_theta.toFixed(0)} < ${thetaLimit} — decay ok`); }
@@ -6571,12 +6808,20 @@ function runBuyerSellerAdvisor() {
       finalAdvice = `⚠️ <b>RISKY ZONE — IV ${ce_iv.toFixed(0)}% (15-25%)</b><br>7-din: 53% avg win = coin flip. EMA/PCR mixed signal. Buying avoid karo. IV<15% ya PCR>1.15 ka wait karo.`;
     }
   } else if (ce_iv > 0 && ce_iv <= 15 && dte > 0) {
-    if (emaBull2 && pcr > 1.0) {
-      finalAdvice = `✅ <b>BUY CE</b> — IV ${ce_iv.toFixed(0)}%<15 + EMA BULL + PCR ${pcr.toFixed(2)}>1.0<br>6-din: 83% win rate. ${atm} CE kharido. Stop: 40% premium loss. Target: 2x premium.`;
-    } else if (emaBear2 && pcr < 1.0) {
-      finalAdvice = `✅ <b>BUY PE</b> — IV ${ce_iv.toFixed(0)}%<15 + EMA BEAR + PCR ${pcr.toFixed(2)}<1.0<br>6-din: 83% win rate. ${atm} PE kharido. Stop: 40% premium loss. Target: 2x premium.`;
+    const ceRatioHint2 = peHeavy2 ? ` CE/PE=${cepeRatio.toFixed(3)} PE heavy = BOTTOM signal! ` : ceHeavy2 ? ` CE/PE=${cepeRatio.toFixed(3)} CE heavy = TOP near, wait for dip. ` : '';
+    if (emaBull2 && pcr > 1.0 && !ceHeavy2) {
+      finalAdvice = `✅ <b>BUY CE</b> — IV ${ce_iv.toFixed(0)}%<15 + EMA BULL + PCR ${pcr.toFixed(2)}>1.0${ceRatioHint2}<br>8-din: 83% win avg +69. ${atm} CE. Stop: 40% loss. Target: 2x.`;
+    } else if (emaBull2 && peHeavy2) {
+      finalAdvice = `✅ <b>BUY CE — STRONG</b> — IV ${ce_iv.toFixed(0)}%<15 + BULL + CE/PE=${cepeRatio.toFixed(3)} BOTTOM SIGNAL!<br>8-din: 83% win. PE heavy = bottom near. ${atm} CE kharido abhi. Stop: 40%.`;
+    } else if (emaBear2 && pcr < 1.0 && !peHeavy2) {
+      finalAdvice = `✅ <b>BUY PE</b> — IV ${ce_iv.toFixed(0)}%<15 + EMA BEAR + PCR ${pcr.toFixed(2)}<1.0${ceRatioHint2}<br>8-din: 83% win avg +69. ${atm} PE. Stop: 40% loss. Target: 2x.`;
+    } else if (emaBear2 && ceHeavy2) {
+      finalAdvice = `✅ <b>BUY PE — STRONG</b> — IV ${ce_iv.toFixed(0)}%<15 + BEAR + CE/PE=${cepeRatio.toFixed(3)} TOP SIGNAL!<br>8-din: 83% win. CE heavy = top near. ${atm} PE kharido abhi. Stop: 40%.`;
+    } else if (isSideways) {
+      const cheapSide = ceLtp2 < peLtp2 ? `CE ₹${ceLtp2.toFixed(1)} sasta` : `PE ₹${peLtp2.toFixed(1)} sasta`;
+      finalAdvice = `↔ <b>SIDEWAYS — IV SAFE</b> — IV ${ce_iv.toFixed(0)}%<15. RSI ${atmRSI2.toFixed(0)}, PCR ${pcr.toFixed(2)} neutral.<br>${cheapSide} kharido. Exit when ratio > 1.12 ya < 0.88.`;
     } else {
-      finalAdvice = `🟡 <b>IV SAFE but signal unclear</b> — IV ${ce_iv.toFixed(0)}%<15 lekin EMA/PCR confirm nahi<br>EMA aur PCR dono align hone do phir enter karo.`;
+      finalAdvice = `🟡 <b>IV SAFE (<15%) — Signal wait karo</b><br>PCR ${pcr.toFixed(2)} ya EMA not aligned.${ceRatioHint2} Wait: BULL+PCR>1.0 (CE) ya BEAR+PCR<1.0 (PE).`;
     }
   } else {
     finalAdvice = `⚠️ <b>WAIT</b> — Mixed signals. IV ${ce_iv.toFixed(0)}%, PCR ${pcr.toFixed(2)}, EMA ${emaBias||'—'}<br>Clear direction nahi. Koi trade nahi.`;
@@ -6662,6 +6907,7 @@ async function loadNews() {
 
 function onChainLoaded() {
   updateOptionsBattle();
+  updateCePeRatioPanel();
   runBuyerSellerAdvisor();
   calcBuyingDanger();
   updateSentimentDash();
@@ -6736,10 +6982,12 @@ function calcBuyingDanger() {
   else if (dte === 1) { dangerScore += 15; reasons.push({ text:'⚠️ Kal expiry — Theta fast chal raha hai.', color:'#ff6b00', weight:'medium' }); }
 
   // 6-day CSV data thresholds
-  if (atmIV > 35)      { dangerScore += 35; reasons.push({ text:`🔴 IV ${atmIV.toFixed(1)}%>35 — STRONG SELLER (64% win). Short straddle karo.`, color:'#ff1a4a', weight:'critical' }); }
-  else if (atmIV > 25) { dangerScore += 25; reasons.push({ text:`🔴 IV ${atmIV.toFixed(1)}%>25 — SELLER DAY. Buyers 36-40% only. Wait/Sell karo.`, color:'#ff3d6b', weight:'high' }); }
-  else if (atmIV > 15) { dangerScore += 10; reasons.push({ text:`⚠️ IV ${atmIV.toFixed(1)}% RISKY (15-25%). 53% win = coin flip. Avoid buying.`, color:'#ff6b00', weight:'medium' }); }
-  else if (atmIV > 0)  { dangerScore -= 15; reasons.push({ text:`✅ IV ${atmIV.toFixed(1)}%<15 — BUY ZONE! 6-day: 83% win rate.`, color:'#00e5a0', weight:'positive' }); }
+  // 8-day data thresholds (867 rows)
+  if (atmIV > 35)       { dangerScore += 40; reasons.push({ text:`🔴 IV ${atmIV.toFixed(1)}%>35 — STRONG SELLER (61% win). Short straddle.`, color:'#ff1a4a', weight:'critical' }); }
+  else if (atmIV > 25)  { dangerScore += 30; reasons.push({ text:`🔴 IV ${atmIV.toFixed(1)}%>25 — SELLER DAY. SELL PE 82% win! CE/PE buyers 41%.`, color:'#ff3d6b', weight:'high' }); }
+  else if (atmIV > 18)  { dangerScore += 12; reasons.push({ text:`⚠️ IV ${atmIV.toFixed(1)}% RISKY (18-25%). CE 53% marginal. PCR>1.15+BULL needed.`, color:'#ff6b00', weight:'medium' }); }
+  else if (atmIV > 15)  { dangerScore += 20; reasons.push({ text:`🔴 IV ${atmIV.toFixed(1)}% VERY RISKY (15-18%). CE 44% — WORSE than 18-25%!`, color:'#ff4400', weight:'high' }); }
+  else if (atmIV > 0)   { dangerScore -= 18; reasons.push({ text:`✅ IV ${atmIV.toFixed(1)}%<15 — BUY ZONE! 8-day: 83% win avg +69.`, color:'#00e5a0', weight:'positive' }); }
 
   let totalCallOI = 0, totalPutOI = 0;
   chainData.forEach(d => { totalCallOI += d.call_options?.market_data?.oi||0; totalPutOI += d.put_options?.market_data?.oi||0; });
@@ -6932,8 +7180,31 @@ function renderEmaChart() {
         datalabels: { display: false },
         legend: { display: false },
         zoom: {
-          pan:  { enabled:true, mode:'x' },
-          zoom: { wheel:{ enabled:true }, pinch:{ enabled:true }, mode:'x' },
+          pan:  { 
+            enabled: true, mode: 'x',
+            onPan({ chart }) {
+              // Sync zoom-pan with our emaViewOffset
+              const total = emaAllCandles.length;
+              const visMin = chart.scales.x.min;
+              const visMax = chart.scales.x.max;
+              const visLen = visMax - visMin;
+              // Convert pan position to offset
+              const newOffset = Math.max(0, total - Math.round(visMax) - 1);
+              emaViewOffset = Math.min(Math.max(0, newOffset), total - EMA_VIEW_BARS);
+            }
+          },
+          zoom: { 
+            wheel:{ enabled:true, speed:0.05 },
+            pinch:{ enabled:true },
+            mode:'x',
+            onZoom({ chart }) {
+              // Update EMA_VIEW_BARS based on zoom level
+              const visLen = Math.round(chart.scales.x.max - chart.scales.x.min);
+              if (visLen > 10 && visLen < 500) {
+                EMA_VIEW_BARS = visLen;
+              }
+            }
+          },
         },
         crosshair: {},
       },
@@ -6966,11 +7237,315 @@ function renderEmaChart() {
   const btWarn = document.getElementById('btApiWarn');
   if (btWarn) btWarn.textContent = '';
 
+  // Init drawing canvas
+  setTimeout(() => { initDrawingCanvas(); redrawDrawings(); }, 100);
+
   // Start live tick
   if (liveTickTimer) clearInterval(liveTickTimer);
   liveTickTimer = setInterval(updateLiveCandle, 3000);
 }
 
+
+/* ══════════════════════════════════════════════════════
+   DRAWING TOOLS ENGINE
+   Cross cursor, H-Line, Trend Line, Arrow, Dot, Eraser
+══════════════════════════════════════════════════════ */
+let activeDrawTool = 'cross';
+let drawings = [];          // { type, points, color, price }
+let drawingInProgress = null;
+let isDrawing = false;
+
+function setDrawTool(tool) {
+  activeDrawTool = tool;
+  document.querySelectorAll('.draw-tool-btn').forEach(b => b.classList.remove('active'));
+  const btn = document.getElementById('tool_' + tool);
+  if (btn) btn.classList.add('active');
+  
+  const canvas = document.getElementById('drawingCanvas');
+  if (!canvas) return;
+  
+  const tips = {
+    cross:  'Crosshair cursor — hover karo price dekhne ke liye',
+    hline:  'Click karo — horizontal support/resistance line draw hogi',
+    tline:  'Click start → Click end — trend line draw karo',
+    arrow:  'Click start → Click end — arrow draw karo',
+    dot:    'Click karo — dot mark karo (entry/exit point)',
+    eraser: 'Drawing ke upar click karo — delete karo',
+  };
+  const tip = document.getElementById('drawTooltip');
+  if (tip) tip.textContent = tips[tool] || '';
+  
+  if (tool === 'cross') {
+    canvas.classList.remove('draw-active','draw-eraser','draw-arrow');
+    canvas.style.pointerEvents = 'none';
+  } else if (tool === 'eraser') {
+    canvas.classList.remove('draw-active','draw-arrow');
+    canvas.classList.add('draw-active','draw-eraser');
+    canvas.style.pointerEvents = 'all';
+  } else {
+    canvas.classList.remove('draw-eraser','draw-arrow');
+    canvas.classList.add('draw-active');
+    if (tool === 'arrow') canvas.classList.add('draw-arrow');
+    canvas.style.pointerEvents = 'all';
+  }
+}
+
+function getChartPixelFromPrice(chart, price) {
+  return chart ? chart.scales.y.getPixelForValue(price) : 0;
+}
+function getPriceFromPixel(chart, py) {
+  return chart ? chart.scales.y.getValueForPixel(py) : 0;
+}
+function getBarIndexFromPixel(chart, px) {
+  if (!chart) return 0;
+  return Math.round(chart.scales.x.getValueForPixel(px));
+}
+
+function initDrawingCanvas() {
+  const canvas = document.getElementById('drawingCanvas');
+  if (!canvas) return;
+  
+  // Sync size with chart canvas
+  const cc = document.getElementById('candleCanvas');
+  if (cc) {
+    canvas.width  = cc.offsetWidth;
+    canvas.height = cc.offsetHeight;
+    canvas.style.width  = cc.offsetWidth  + 'px';
+    canvas.style.height = cc.offsetHeight + 'px';
+  }
+  
+  canvas.addEventListener('mousedown', onDrawStart);
+  canvas.addEventListener('mousemove', onDrawMove);
+  canvas.addEventListener('mouseup',   onDrawEnd);
+  canvas.addEventListener('mouseleave',onDrawEnd);
+  
+  // Touch support
+  canvas.addEventListener('touchstart', e => { e.preventDefault(); const t=e.touches[0]; onDrawStart({offsetX:t.clientX-canvas.getBoundingClientRect().left, offsetY:t.clientY-canvas.getBoundingClientRect().top}); }, {passive:false});
+  canvas.addEventListener('touchmove',  e => { e.preventDefault(); const t=e.touches[0]; onDrawMove({offsetX:t.clientX-canvas.getBoundingClientRect().left, offsetY:t.clientY-canvas.getBoundingClientRect().top}); }, {passive:false});
+  canvas.addEventListener('touchend',   e => { e.preventDefault(); onDrawEnd({}); }, {passive:false});
+}
+
+function onDrawStart(e) {
+  if (!candleChart) return;
+  const px = e.offsetX, py = e.offsetY;
+  const price = getPriceFromPixel(candleChart, py);
+  const barIdx = getBarIndexFromPixel(candleChart, px);
+  
+  if (activeDrawTool === 'eraser') {
+    // Find and remove nearest drawing
+    const thresh = 15;
+    drawings = drawings.filter(d => {
+      if (d.type === 'hline') {
+        const dp = getChartPixelFromPrice(candleChart, d.price);
+        return Math.abs(dp - py) > thresh;
+      }
+      if (d.type === 'dot') {
+        const dp = getChartPixelFromPrice(candleChart, d.price);
+        const xp = candleChart.scales.x.getPixelForValue(d.barIdx);
+        return Math.abs(dp-py)>thresh || Math.abs(xp-px)>thresh;
+      }
+      // tline/arrow: check proximity to either endpoint
+      if (d.points) {
+        const [p1,p2] = d.points;
+        const x1=candleChart.scales.x.getPixelForValue(p1.x);
+        const y1=candleChart.scales.y.getPixelForValue(p1.y);
+        const x2=candleChart.scales.x.getPixelForValue(p2?.x||p1.x);
+        const y2=candleChart.scales.y.getPixelForValue(p2?.y||p1.y);
+        const d1=Math.sqrt((px-x1)**2+(py-y1)**2);
+        const d2=Math.sqrt((px-x2)**2+(py-y2)**2);
+        return d1>thresh && d2>thresh;
+      }
+      return true;
+    });
+    redrawDrawings();
+    return;
+  }
+  
+  if (activeDrawTool === 'dot') {
+    drawings.push({ type:'dot', price, barIdx, color:'#ffd000' });
+    redrawDrawings();
+    return;
+  }
+  
+  if (activeDrawTool === 'hline') {
+    drawings.push({ type:'hline', price, color:'#00c9ff' });
+    redrawDrawings();
+    return;
+  }
+  
+  // tline or arrow: start drawing
+  isDrawing = true;
+  drawingInProgress = { type:activeDrawTool, points:[{x:barIdx, y:price}], color: activeDrawTool==='arrow'?'#ff9f40':'#a78bfa', px1:px, py1:py, px2:px, py2:py };
+}
+
+function onDrawMove(e) {
+  if (!candleChart) return;
+  
+  // Always redraw to show live crosshair (even without drawing)
+  redrawDrawings(e.offsetX, e.offsetY);
+  
+  if (!isDrawing || !drawingInProgress) return;
+  
+  const price = getPriceFromPixel(candleChart, e.offsetY);
+  const barIdx = getBarIndexFromPixel(candleChart, e.offsetX);
+  drawingInProgress.px2 = e.offsetX;
+  drawingInProgress.py2 = e.offsetY;
+  if (drawingInProgress.points.length < 2) {
+    drawingInProgress.points.push({x:barIdx, y:price});
+  } else {
+    drawingInProgress.points[1] = {x:barIdx, y:price};
+  }
+}
+
+function onDrawEnd(e) {
+  if (isDrawing && drawingInProgress) {
+    if (drawingInProgress.points.length >= 2 && 
+        (drawingInProgress.px1 !== drawingInProgress.px2 || drawingInProgress.py1 !== drawingInProgress.py2)) {
+      drawings.push({...drawingInProgress});
+    }
+    drawingInProgress = null;
+    isDrawing = false;
+    redrawDrawings();
+  }
+}
+
+function redrawDrawings(mouseX, mouseY) {
+  const canvas = document.getElementById('drawingCanvas');
+  if (!canvas || !candleChart) return;
+  const ctx = canvas.getContext('2d');
+  const { left, right, top, bottom, width: cw, height: ch } = candleChart.chartArea;
+  
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  
+  // ── Draw crosshair (always, when mouse in chart area) ──
+  if (mouseX !== undefined && mouseX >= left && mouseX <= right && mouseY >= top && mouseY <= bottom) {
+    ctx.save();
+    ctx.setLineDash([4, 4]);
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+    // Vertical line
+    ctx.beginPath(); ctx.moveTo(mouseX, top); ctx.lineTo(mouseX, bottom); ctx.stroke();
+    // Horizontal line
+    ctx.beginPath(); ctx.moveTo(left, mouseY); ctx.lineTo(right, mouseY); ctx.stroke();
+    ctx.setLineDash([]);
+    
+    // Price label on right
+    const price = getPriceFromPixel(candleChart, mouseY);
+    if (price) {
+      const txt = price.toFixed(1);
+      const tw = ctx.measureText(txt).width;
+      ctx.fillStyle = '#00c9ff';
+      ctx.fillRect(right + 2, mouseY - 9, tw + 8, 18);
+      ctx.fillStyle = '#000';
+      ctx.font = 'bold 9px "Space Mono"';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(txt, right + 6, mouseY);
+    }
+    
+    // Bar label on bottom
+    const bi = getBarIndexFromPixel(candleChart, mouseX);
+    const label = candleChart.data.labels[bi] || '';
+    if (label) {
+      const tw2 = ctx.measureText(label).width;
+      ctx.fillStyle = '#1e3050';
+      ctx.fillRect(mouseX - tw2/2 - 4, bottom + 2, tw2 + 8, 16);
+      ctx.fillStyle = '#fff';
+      ctx.font = '9px "Space Mono"';
+      ctx.textAlign = 'center';
+      ctx.fillText(label, mouseX, bottom + 10);
+    }
+    ctx.restore();
+  }
+  
+  // ── Draw all saved drawings ──
+  drawings.forEach(d => drawOne(ctx, d));
+  
+  // ── Draw in-progress line ──
+  if (drawingInProgress && isDrawing) {
+    drawOne(ctx, {...drawingInProgress, inProgress:true});
+  }
+}
+
+function drawOne(ctx, d) {
+  if (!candleChart) return;
+  const { left, right, top, bottom } = candleChart.chartArea;
+  ctx.save();
+  
+  if (d.type === 'hline') {
+    const py = getChartPixelFromPrice(candleChart, d.price);
+    if (py < top || py > bottom) { ctx.restore(); return; }
+    ctx.strokeStyle = d.color || '#00c9ff';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([6, 3]);
+    ctx.beginPath(); ctx.moveTo(left, py); ctx.lineTo(right, py); ctx.stroke();
+    ctx.setLineDash([]);
+    // Price label
+    ctx.fillStyle = d.color || '#00c9ff';
+    ctx.font = 'bold 9px "Space Mono"';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(d.price.toFixed(1), right + 4, py);
+  }
+  
+  else if (d.type === 'dot') {
+    const py = getChartPixelFromPrice(candleChart, d.price);
+    const px = candleChart.scales.x.getPixelForValue(d.barIdx);
+    if (py < top || py > bottom) { ctx.restore(); return; }
+    ctx.fillStyle = d.color || '#ffd000';
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(px, py, 6, 0, Math.PI*2);
+    ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#000';
+    ctx.font = 'bold 9px "Space Mono"';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('●', px, py);
+  }
+  
+  else if (d.type === 'tline' || d.type === 'arrow') {
+    if (!d.points || d.points.length < 2) { ctx.restore(); return; }
+    const [p1, p2] = d.points;
+    const x1 = candleChart.scales.x.getPixelForValue(p1.x);
+    const y1 = candleChart.scales.y.getPixelForValue(p1.y);
+    const x2 = candleChart.scales.x.getPixelForValue(p2.x);
+    const y2 = candleChart.scales.y.getPixelForValue(p2.y);
+    
+    ctx.strokeStyle = d.color || '#a78bfa';
+    ctx.lineWidth = d.inProgress ? 1.5 : 2;
+    if (d.inProgress) ctx.setLineDash([4,3]);
+    ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+    ctx.setLineDash([]);
+    
+    // Arrow head
+    if (d.type === 'arrow') {
+      const angle = Math.atan2(y2-y1, x2-x1);
+      const aLen = 12;
+      ctx.fillStyle = d.color || '#ff9f40';
+      ctx.beginPath();
+      ctx.moveTo(x2, y2);
+      ctx.lineTo(x2 - aLen*Math.cos(angle-0.4), y2 - aLen*Math.sin(angle-0.4));
+      ctx.lineTo(x2 - aLen*Math.cos(angle+0.4), y2 - aLen*Math.sin(angle+0.4));
+      ctx.closePath(); ctx.fill();
+    }
+    
+    // Start/end dots
+    ctx.fillStyle = d.color || '#a78bfa';
+    ctx.beginPath(); ctx.arc(x1,y1,3,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(x2,y2,3,0,Math.PI*2); ctx.fill();
+  }
+  
+  ctx.restore();
+}
+
+function clearAllDrawings() {
+  drawings = [];
+  drawingInProgress = null;
+  isDrawing = false;
+  redrawDrawings();
+}
 
 /* ══ RESTORED MISSING FUNCTIONS ══════════════════════ */
 
@@ -7091,7 +7666,18 @@ function resetEmaChart() {
 
 function scrollEmaChart(dir) {
   const maxOffset = Math.max(0, emaAllCandles.length - EMA_VIEW_BARS);
-  emaViewOffset = Math.max(0, Math.min(maxOffset, emaViewOffset + Math.round(EMA_VIEW_BARS * dir)));
+  const step = Math.max(1, Math.round(EMA_VIEW_BARS * Math.abs(dir)));
+  if (dir < 0) {
+    // Scroll LEFT (older candles) — increase offset
+    emaViewOffset = Math.min(maxOffset, emaViewOffset + step);
+  } else {
+    // Scroll RIGHT (newer candles) — decrease offset
+    emaViewOffset = Math.max(0, emaViewOffset - step);
+  }
+  // Reset zoom plugin state so our manual scroll takes effect
+  if (candleChart) {
+    try { candleChart.resetZoom(); } catch(e) {}
+  }
   renderEmaChart();
 }
 
