@@ -60,7 +60,7 @@ body::after {
   background-size: 200px 200px;
 }
 
-.app { position:relative; z-index:1; max-width:1700px; margin:0 auto; padding:16px; }
+.app { position:relative; z-index:1; max-width:1700px; margin:0 auto; padding:8px; }
 
 /* ═══════════════ HEADER ═══════════════ */
 .header {
@@ -71,6 +71,8 @@ body::after {
   border-top: 2px solid var(--accent);
   border-radius:10px; margin-bottom:14px;
   box-shadow: 0 8px 32px rgba(0,0,0,.5), 0 0 0 1px rgba(0,201,255,.05);
+  position: relative;
+  z-index: 10;
 }
 .brand { display:flex; align-items:center; gap:14px; }
 .brand-icon {
@@ -98,12 +100,16 @@ body::after {
 #authScreen {
   display:flex; align-items:center; justify-content:center;
   min-height:70vh; flex-direction:column; gap:32px;
+  position: relative;
+  z-index: 500;
+  background: rgba(7,11,18,1);
 }
 .auth-card {
   background:var(--panel); border:1px solid var(--border);
   border-radius:16px; padding:36px 40px; width:100%; max-width:480px;
   box-shadow:0 20px 60px rgba(0,0,0,.6), inset 0 1px 0 rgba(0,201,255,.08);
-  animation:fadeUp .4s ease;
+  position: relative;
+  z-index: 600;
 }
 @keyframes fadeUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
 .auth-title {
@@ -181,16 +187,18 @@ body::after {
 }
 .token-input-area:focus { border-color:var(--accent); box-shadow:0 0 0 3px rgba(0,201,255,.1); }
 
-.tabs { display:flex; gap:0; margin-bottom:20px; border-bottom:1px solid var(--border); }
+.tabs { display:flex; gap:0; margin-bottom:20px; border-bottom:1px solid var(--border); position: relative; z-index: 10; }
 .tab {
   padding:10px 18px; font-family:var(--font-mono); font-size:11px;
   color:var(--muted); cursor:pointer; border-bottom:2px solid transparent;
   transition:all .2s; letter-spacing:1px; text-transform:uppercase;
   background:none; border-top:none; border-left:none; border-right:none;
+  position: relative;
+  z-index: 10;
 }
 .tab.active { color:var(--accent); border-bottom-color:var(--accent); }
-.tab-panel { display:none; }
-.tab-panel.active { display:block; }
+.tab-panel { display:none; position: relative; z-index: 5; }
+.tab-panel.active { display:block; position: relative; z-index: 5; }
 
 /* ═══════════════ AI PANEL ═══════════════ */
 .ai-panel {
@@ -509,25 +517,22 @@ canvas.oi-chart { width: 100% !important; }
 /* ═══════════════ MOBILE RESPONSIVE ═══════════════ */
 @media (max-width: 768px) {
   body { overflow-x: hidden; }
-  .candle-section { margin: 6px !important; }
-  .candle-select-row { padding: 8px 10px; gap: 6px; }
-  #candleCanvas { height: 280px !important; }
-  .chart-title { font-size: 14px; }
-  .chart-body { padding: 8px; }
-  .chart-topbar { padding: 8px 10px; }
-  #oiChartCanvas { height: 250px !important; }
-  /* Fix right margin cutoff on mobile */
+  .candle-section { margin: 0 !important; border-radius: 0 !important; }
+  .candle-select-row { padding: 6px 8px; gap: 4px; }
+  #candleCanvas { height: calc(100vw * 0.7) !important; min-height: 260px !important; max-height: 420px !important; }
+  #emaChartWrap { padding: 0 !important; }
+  .chart-title { font-size: 13px; }
+  .chart-body { padding: 6px; }
+  .chart-topbar { padding: 6px 8px; }
+  #oiChartCanvas { height: 220px !important; }
   .candle-section, .chart-section {
-    margin-left: 4px !important;
-    margin-right: 4px !important;
-    max-width: calc(100vw - 8px);
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    max-width: 100vw;
   }
-  /* Signal box wrap on mobile */
-  #emaSignalBox { font-size:10px !important; white-space: normal; line-height: 1.6; }
-  /* TF buttons smaller */
-  .tf-btn { padding: 3px 6px; font-size:11px; }
-  /* Indicator legend wrap */
-  #indicatorLegendBar { padding: 4px 8px; gap: 4px; }
+  #emaSignalBox { font-size:10px !important; white-space: normal; line-height: 1.5; }
+  .tf-btn { padding: 3px 5px; font-size:10px; }
+  #indicatorLegendBar { padding: 4px 6px; gap: 4px; }
 }
 
 /* ═══════════════ FULLSCREEN CHART ═══════════════ */
@@ -774,6 +779,16 @@ body.chart-fs-active #candleSection {
 .draw-tool-btn:hover { border-color: var(--accent); color: var(--accent); }
 .draw-tool-btn.active { background: rgba(0,201,255,.15); border-color: var(--accent); color: var(--accent); }
 .draw-tool-btn .tool-icon { font-size: 13px; }
+.cursor-menu-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px; cursor: pointer;
+  font-family: var(--font-mono); font-size: 12px; color: #d1d4dc;
+  transition: background .12s;
+}
+.cursor-menu-item:hover { background: rgba(255,255,255,.06); }
+.cursor-menu-item.active { color: var(--accent); }
+.cmenu-icon { font-size: 15px; width: 20px; text-align: center; }
+.cmenu-shortcut { margin-left: auto; font-size: 10px; color: var(--muted2); }
 #drawingCanvas {
   position: absolute; top: 0; left: 0; width: 100%; height: 100%;
   pointer-events: none; z-index: 10;
@@ -781,6 +796,8 @@ body.chart-fs-active #candleSection {
 #drawingCanvas.draw-active { pointer-events: all; cursor: crosshair; }
 #drawingCanvas.draw-eraser { cursor: cell; }
 #drawingCanvas.draw-arrow  { cursor: default; }
+/* Cross mode: always show crosshair, pointer-events for pan */
+#candleCanvas { cursor: crosshair !important; }
 .candle-select-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; padding: 12px 18px; background: var(--panel2); border-bottom: 1px solid var(--border); }
 /* TF buttons */
 .tf-btn { background:var(--panel3);border:1px solid var(--border2);color:var(--muted);padding:4px 9px;border-radius:4px;cursor:pointer;font-family:var(--font-mono);font-size:10px;letter-spacing:.3px;transition:all .15s; }
@@ -1409,8 +1426,8 @@ tr.atm-row td.strike-cell { color:var(--accent); }
 .log-row:hover { background: rgba(176,107,255,0.05); }
 </style>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js">
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-annotation/3.0.1/chartjs-plugin-annotation.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-zoom/2.0.1/chartjs-plugin-zoom.min.js"></script>
 
@@ -1434,17 +1451,17 @@ tr.atm-row td.strike-cell { color:var(--accent); }
   </div>
 </div>
 
-<div id="authScreen">
+<div id="authScreen" style="display:flex;">
   <div class="auth-card">
     <div class="auth-title">CONNECT UPSTOX</div>
     <div class="auth-sub">Link your Upstox Developer API to start fetching real-time option chain data with full Greeks, OI, and PCR.</div>
 
     <div class="tabs">
-      <button class="tab active" onclick="switchTab('oauth')">OAuth Login</button>
-      <button class="tab" onclick="switchTab('token')">Direct Token</button>
+      <button class="tab active" onclick="console.log('OAuth tab clicked');switchTab('oauth')">OAuth Login</button>
+      <button class="tab" onclick="console.log('Token tab clicked');switchTab('token')">Direct Token</button>
     </div>
 
-    <div class="tab-panel active" id="tabOauth">
+    <div class="tab-panel active" id="tabOauth" style="position:relative;z-index:15;">
       <div class="field">
         <label>API Key (Client ID)</label>
         <input type="text" id="apiKey" placeholder="">
@@ -1470,7 +1487,7 @@ tr.atm-row td.strike-cell { color:var(--accent); }
     </div>
 
     <div class="tab-panel" id="tabToken">
-      <div class="field">
+      <div class="field" style="position:relative;z-index:15;">
         <label style="font-size:13px;color:var(--accent);font-weight:bold;">Upstox Access Token paste karo 👇</label>
         <textarea class="token-input-area" id="directToken" placeholder="eyJ0eXAiOiJKV1QiLCJrZXlfaWQiOi... (Upstox se copy karo)"></textarea>
         <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);margin-top:6px;">
@@ -1478,7 +1495,7 @@ tr.atm-row td.strike-cell { color:var(--accent); }
         </div>
       </div>
       <div class="btn-row">
-        <button class="btn btn-primary" onclick="loginWithToken()" style="width:100%;padding:14px;font-size:15px;letter-spacing:2px;margin-top:8px;">🚀 LOGIN → LOAD OPTION CHAIN</button>
+        <button class="btn btn-primary" onclick="loginWithToken()" style="width:100%;padding:14px;font-size:15px;letter-spacing:2px;margin-top:8px;position:relative;z-index:20;">🚀 LOGIN → LOAD OPTION CHAIN</button>
       </div>
       <div class="auth-steps">
         <div class="auth-steps-title">HOW TO GET TOKEN QUICKLY</div>
@@ -1504,7 +1521,7 @@ tr.atm-row td.strike-cell { color:var(--accent); }
   </div>
 </div>
 
-<div id="mainApp">
+<div id="mainApp" style="display:none;">
 
   <div class="ctrl-bar">
     <div class="ctrl-group">
@@ -2259,31 +2276,43 @@ tr.atm-row td.strike-cell { color:var(--accent); }
       <button onclick="openIndicatorPanel()" style="background:var(--panel3);border:1px solid var(--border2);color:var(--accent);padding:4px 10px;border-radius:4px;cursor:pointer;font-family:var(--font-mono);font-size:10px;letter-spacing:.5px;">＋ INDICATOR</button>
 
       <!-- Scroll + reset -->
-      <button onclick="scrollEmaChart(-0.3)" style="background:var(--panel3);border:1px solid var(--border2);color:var(--text);padding:4px 8px;border-radius:4px;cursor:pointer;font-size:11px;">◀</button>
-      <button onclick="scrollEmaChart(0.3)"  style="background:var(--panel3);border:1px solid var(--border2);color:var(--text);padding:4px 8px;border-radius:4px;cursor:pointer;font-size:11px;">▶</button>
+      <button onclick="scrollEmaChart(-0.3)" title="Older candles (past)" style="background:var(--panel3);border:1px solid var(--border2);color:var(--text);padding:4px 8px;border-radius:4px;cursor:pointer;font-size:11px;">◀</button>
+      <button onclick="scrollEmaChart(0.3)"  title="Newer candles (present)" style="background:var(--panel3);border:1px solid var(--border2);color:var(--text);padding:4px 8px;border-radius:4px;cursor:pointer;font-size:11px;">▶</button>
       <button onclick="resetEmaChart()" style="background:var(--panel3);border:1px solid var(--border2);color:var(--muted);padding:4px 8px;border-radius:4px;cursor:pointer;font-family:var(--font-mono);font-size:10px;">RESET</button>
       <button id="fullscreenBtn" onclick="toggleChartFullscreen()" title="Fullscreen">⛶</button>
     </div>
 
     <!-- Strategy toggle bar (replaces old legend bar) -->
-    <div id="indicatorLegendBar" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:6px 12px;background:var(--panel2);border-bottom:1px solid var(--border);min-height:36px;font-family:var(--font-mono);font-size:11px;">
+    <div id="indicatorLegendBar" style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:5px 10px;background:var(--panel2);border-bottom:1px solid var(--border);min-height:34px;font-family:var(--font-mono);font-size:11px;">
       <!-- Strategy 1: EMA Cross -->
-      <div id="stratCard_strat_ema" onclick="selectStrategy('strat_ema')" style="display:flex;align-items:center;gap:6px;padding:4px 10px;border-radius:5px;cursor:pointer;border:1px solid rgba(0,229,160,.4);background:rgba(0,229,160,.1);transition:all .15s;">
-        <button id="stratEye_strat_ema" onclick="event.stopPropagation();toggleStrategyVisible('strat_ema')" style="background:none;border:none;cursor:pointer;padding:0;font-size:13px;line-height:1;">👁</button>
-        <span style="color:#00e5a0;font-size:11px;letter-spacing:.5px;">▲▼</span>
-        <span id="stratName_strat_ema" style="color:var(--text);font-size:10px;">EMA Cross</span>
-        <span id="stratCount_strat_ema" style="color:var(--muted);font-size:10px;"></span>
+      <div id="stratCard_strat_ema" onclick="selectStrategy('strat_ema')" style="display:flex;align-items:center;gap:5px;padding:3px 8px;border-radius:5px;cursor:pointer;border:1px solid rgba(0,229,160,.4);background:rgba(0,229,160,.1);transition:all .15s;">
+        <button id="stratEye_strat_ema" onclick="event.stopPropagation();toggleStrategyVisible('strat_ema')" style="background:none;border:none;cursor:pointer;padding:0;font-size:12px;line-height:1;">👁</button>
+        <span style="color:#00e5a0;font-size:10px;">▲▼</span>
+        <span id="stratName_strat_ema" style="color:var(--text);font-size:10px;">EMA</span>
       </div>
-
+      <!-- CSV Strategy Card -->
+      <div id="stratCard_strat_csv" onclick="toggleStrategyVisible('strat_csv')" style="display:flex;align-items:center;gap:4px;padding:3px 8px;border-radius:4px;cursor:pointer;border:1px solid rgba(0,201,255,.4);background:rgba(0,201,255,.08);transition:all .15s;">
+        <button id="stratEye_strat_csv" onclick="event.stopPropagation();toggleStrategyVisible('strat_csv')" style="background:none;border:none;cursor:pointer;padding:0;font-size:11px;">👁</button>
+        <span style="color:#00c9ff;font-size:10px;">◆ CSV</span>
+      </div>
+      <!-- Strategy toggle buttons -->
+      <button id="stratEmaToggle" onclick="toggleStrategy('ema')" style="background:rgba(0,229,160,.15);border:1px solid rgba(0,229,160,.4);color:#00e5a0;padding:3px 8px;border-radius:4px;cursor:pointer;font-family:var(--font-mono);font-size:10px;">EMA ON</button>
+      <button id="stratCsvToggle" onclick="toggleStrategy('csv')" style="background:rgba(255,159,64,.15);border:1px solid rgba(255,159,64,.4);color:#ff9f40;padding:3px 8px;border-radius:4px;cursor:pointer;font-family:var(--font-mono);font-size:10px;">CSV OFF</button>
+      <!-- Cursor mode -->
+      <button id="cursorCrossBtn" onclick="setChartCursor('cross')" style="background:rgba(0,201,255,.2);border:1px solid rgba(0,201,255,.5);color:#00c9ff;padding:3px 8px;border-radius:4px;cursor:pointer;font-family:var(--font-mono);font-size:10px;">✛</button>
+      <button id="cursorDragBtn" onclick="setChartCursor('drag')" style="background:rgba(128,128,128,.15);border:1px solid rgba(128,128,128,.3);color:#888;padding:3px 8px;border-radius:4px;cursor:pointer;font-family:var(--font-mono);font-size:10px;">✋</button>
+      <button onclick="resetChartView()" style="background:rgba(0,201,255,.1);border:1px solid rgba(0,201,255,.3);color:#00c9ff;padding:3px 8px;border-radius:4px;cursor:pointer;font-family:var(--font-mono);font-size:10px;">⟲</button>
       <div style="flex:1"></div>
-      <!-- Signal type legend -->
-      <div id="indMiniLegend" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;"></div>
-      <div style="display:flex;gap:6px;align-items:center;font-family:var(--font-mono);font-size:10px;">
-        <span style="color:#00e5a0;">▲ BUY CE</span>
-        <span style="color:#ff3d6b;">▼ BUY PE</span>
-        <span style="color:#ff6b00;">◆ SELL CE</span>
-        <span style="color:#7c3aed;">◆ SELL PE</span>
-
+      <!-- Signal legend (hidden spans used by JS) -->
+      <span id="legendBuyCE"  style="display:none;color:#00e5a0;font-size:10px;">▲CE</span>
+      <span id="legendBuyPE"  style="display:none;color:#ff3d6b;font-size:10px;">▼PE</span>
+      <span id="legendSellCE" style="display:none;color:#ff6b00;font-size:10px;">◆SCE</span>
+      <span id="legendSellPE" style="display:none;color:#7c3aed;font-size:10px;">◆SPE</span>
+      <div id="indMiniLegend" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-size:10px;">
+        <span style="color:#00e5a0;">▲CE</span>
+        <span style="color:#ff3d6b;">▼PE</span>
+        <span style="color:#ff6b00;">◆SCE</span>
+        <span style="color:#7c3aed;">◆SPE</span>
       </div>
     </div>
     <!-- Active strategy result panel (below legend) -->
@@ -2293,38 +2322,76 @@ tr.atm-row td.strike-cell { color:var(--accent); }
     <div id="emaSignalBox" style="padding:3px 12px;font-family:var(--font-mono);font-size:11px;letter-spacing:.3px;background:rgba(0,0,0,.2);border-bottom:1px solid var(--border);min-height:18px;"></div>
 
     <!-- OHLC tooltip bar -->
-    <div id="ohlcBar" style="padding:3px 12px;font-family:var(--font-mono);font-size:11px;color:var(--muted);background:transparent;min-height:16px;display:flex;gap:12px;"></div>
+    <div id="ohlcBar" style="padding:5px 12px;font-family:var(--font-mono);font-size:12px;font-weight:bold;color:#fff;background:rgba(0,0,0,.5);min-height:20px;display:flex;gap:16px;border-radius:4px;"></div>
 
     <!-- Main chart canvas -->
-    <div id="emaChartWrap" style="position:relative;padding:0 8px 8px;touch-action:none;user-select:none;-webkit-user-select:none;">
-      <canvas id="candleCanvas" style="display:block;width:100%;height:360px;touch-action:none;"></canvas>
-      <canvas id="drawingCanvas" width="100%" height="360" style="position:absolute;top:0;left:8px;right:8px;height:360px;pointer-events:none;"></canvas>
+    <div id="emaChartWrap" style="position:relative;padding:0;touch-action:none;user-select:none;-webkit-user-select:none;">
+      <!-- Canvas fills full width, no padding -->
+      <canvas id="candleCanvas" style="display:block;width:100%;height:calc(min(100vw, 900px) * 0.56);min-height:260px;max-height:480px;touch-action:none;cursor:crosshair;"></canvas>
+      <canvas id="drawingCanvas" width="100%" height="360" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;"></canvas>
+      <div id="chartPanHint" style="display:none;position:absolute;bottom:10px;left:50%;transform:translateX(-50%);background:rgba(0,201,255,.2);border:1px solid rgba(0,201,255,.5);padding:4px 12px;border-radius:12px;font-family:var(--font-mono);font-size:11px;color:#00c9ff;pointer-events:none;z-index:50;animation:pulse 2s infinite;">← PINCH / DRAG →</div>
     </div>
 
-    <!-- Drawing Tools Bar -->
-    <div class="chart-draw-toolbar" id="drawToolbar">
-      <span style="font-family:var(--font-mono);font-size:9px;color:var(--muted);letter-spacing:1px;padding-right:4px;">TOOLS:</span>
-      <button class="draw-tool-btn active" id="tool_cross" onclick="setDrawTool('cross')">
-        <span class="tool-icon">✛</span> Cross
-      </button>
-      <button class="draw-tool-btn" id="tool_hline" onclick="setDrawTool('hline')">
+    <!-- Drawing Tools Bar — TradingView style -->
+    <div class="chart-draw-toolbar" id="drawToolbar" style="position:relative;">
+      <!-- Cursor selector (main visible button like TV) -->
+      <div style="position:relative;">
+        <button id="cursorModeBtn" onclick="toggleCursorMenu()" 
+          style="display:flex;align-items:center;gap:5px;padding:4px 10px;border-radius:5px;
+          background:var(--panel2);border:1px solid var(--border);color:var(--text);
+          cursor:pointer;font-family:var(--font-mono);font-size:10px;min-width:90px;">
+          <span id="cursorIcon">✛</span>
+          <span id="cursorLabel">Cross</span>
+          <span style="color:var(--muted);font-size:9px;margin-left:2px;">▼</span>
+        </button>
+        <!-- Dropdown menu — matches screenshot exactly -->
+        <div id="cursorMenu" style="display:none;position:absolute;top:100%;left:0;z-index:999;
+          background:#1e222d;border:1px solid var(--border);border-radius:6px;
+          min-width:200px;box-shadow:0 8px 24px rgba(0,0,0,.8);padding:4px 0;margin-top:4px;">
+          <div onclick="selectCursor('cross','✛','Cross')" 
+            class="cursor-menu-item active" id="cmenu_cross">
+            <span class="cmenu-icon">✛</span> Cross
+            <span class="cmenu-shortcut">Default</span>
+          </div>
+          <div onclick="selectCursor('dot','•','Dot')"
+            class="cursor-menu-item" id="cmenu_dot">
+            <span class="cmenu-icon">•</span> Dot
+          </div>
+          <div onclick="selectCursor('arrow','↗','Arrow')"
+            class="cursor-menu-item" id="cmenu_arrow">
+            <span class="cmenu-icon" style="font-size:14px;">↗</span> Arrow
+          </div>
+          <div onclick="selectCursor('demo','▷','Demonstration')"
+            class="cursor-menu-item" id="cmenu_demo">
+            <span class="cmenu-icon">▷</span> Demonstration
+          </div>
+          <hr style="border:none;border-top:1px solid rgba(255,255,255,.08);margin:4px 0;">
+          <div onclick="selectCursor('eraser','⌫','Eraser')"
+            class="cursor-menu-item" id="cmenu_eraser">
+            <span class="cmenu-icon">⌫</span> Eraser
+          </div>
+          <hr style="border:none;border-top:1px solid rgba(255,255,255,.08);margin:4px 0;">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 14px;">
+            <span style="font-family:var(--font-mono);font-size:11px;color:var(--muted);">Values tooltip on long press</span>
+            <div id="tooltipToggle" onclick="toggleTooltipOnPress()" 
+              style="width:36px;height:20px;background:var(--accent);border-radius:10px;cursor:pointer;position:relative;transition:background .2s;">
+              <div style="position:absolute;top:3px;right:3px;width:14px;height:14px;border-radius:50%;background:#fff;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Drawing tools -->
+      <button class="draw-tool-btn" id="tool_hline" onclick="setDrawTool('hline');closeCursorMenu();">
         <span class="tool-icon">─</span> H-Line
       </button>
-      <button class="draw-tool-btn" id="tool_tline" onclick="setDrawTool('tline')">
+      <button class="draw-tool-btn" id="tool_tline" onclick="setDrawTool('tline');closeCursorMenu();">
         <span class="tool-icon">╱</span> Trend
       </button>
-      <button class="draw-tool-btn" id="tool_arrow" onclick="setDrawTool('arrow')">
-        <span class="tool-icon">↗</span> Arrow
-      </button>
-      <button class="draw-tool-btn" id="tool_dot" onclick="setDrawTool('dot')">
-        <span class="tool-icon">•</span> Dot
-      </button>
-      <button class="draw-tool-btn" id="tool_eraser" onclick="setDrawTool('eraser')">
-        <span class="tool-icon">⌫</span> Eraser
-      </button>
       <div style="flex:1"></div>
-      <button onclick="clearAllDrawings()" style="background:rgba(255,61,107,.1);border:1px solid rgba(255,61,107,.3);color:var(--red);padding:4px 10px;border-radius:4px;cursor:pointer;font-family:var(--font-mono);font-size:9px;">✕ CLEAR</button>
-      <span id="drawTooltip" style="font-family:var(--font-mono);font-size:9px;color:var(--muted);padding-left:8px;"></span>
+      <button onclick="resetChartView()" style="background:rgba(0,201,255,.1);border:1px solid rgba(0,201,255,.3);color:var(--accent);padding:4px 8px;border-radius:4px;cursor:pointer;font-family:var(--font-mono);font-size:9px;white-space:nowrap;">⟲ RESET</button>
+      <button onclick="clearAllDrawings()" style="background:rgba(255,61,107,.1);border:1px solid rgba(255,61,107,.3);color:var(--red);padding:4px 8px;border-radius:4px;cursor:pointer;font-family:var(--font-mono);font-size:9px;white-space:nowrap;">✕ CLR</button>
+      <span id="drawTooltip" style="font-family:var(--font-mono);font-size:9px;color:var(--muted);padding-left:4px;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span>
     </div>
 
     <!-- Backtest panel (below chart) -->
@@ -2342,7 +2409,7 @@ tr.atm-row td.strike-cell { color:var(--accent); }
         <div style="display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding:7px 12px;background:rgba(0,0,0,.2);border-bottom:1px solid var(--border);">
           <span style="font-family:var(--font-mono);font-size:11px;color:var(--muted);">Chart:</span>
           <span id="btDataInfo" style="font-family:var(--font-mono);font-size:11px;color:var(--accent);">0 bars</span>
-          <span id="btDataWarn" style="font-family:var(--font-mono);font-size:11px;color:#ff3d6b;display:none;"></span>
+          <span id="btApiWarn" style="font-family:var(--font-mono);font-size:11px;color:#ff3d6b;display:none;"></span>
           <button onclick="loadOneYearData()" style="background:rgba(0,201,255,.15);border:1px solid var(--accent);color:var(--accent);padding:3px 10px;border-radius:4px;cursor:pointer;font-family:var(--font-mono);font-size:10px;font-weight:bold;">📥 1Y DAILY</button>
           <div style="width:1px;height:16px;background:var(--border);"></div>
 
@@ -2598,7 +2665,7 @@ tr.atm-row td.strike-cell { color:var(--accent); }
           <div>
             <div class="filter-lbl" style="margin-bottom:5px;">Chat ID / Channel</div>
             <div style="display:flex;gap:6px;">
-              <input type="text" class="ctrl-select" id="tgChat" placeholder="@channel or -100xxxxxx" style="flex:1;font-size:12px;" oninput="saveTgConfig()">
+              <input type="text" class="ctrl-select" id="tgChatId" placeholder="@channel or -100xxxxxx" style="flex:1;font-size:12px;" oninput="saveTgConfig()">
               <button class="btn btn-primary btn-sm" onclick="sendTgTest()">TEST</button>
             </div>
           </div>
@@ -2928,22 +2995,29 @@ function selectSymbol(key, label) {
 
 // Init search box with current value
 document.addEventListener('DOMContentLoaded', function() {
-  const cur = document.getElementById('symbolSel')?.value || 'NSE_INDEX|Nifty 50';
-  const lbl = INSTRUMENTS[cur]?.label || 'NIFTY 50';
-  const inp = document.getElementById('symbolSearch');
-  if (inp) inp.value = lbl;
+  try {
+    const cur = document.getElementById('symbolSel')?.value || 'NSE_INDEX|Nifty 50';
+    const lbl = INSTRUMENTS[cur]?.label || 'NIFTY 50';
+    const inp = document.getElementById('symbolSearch');
+    if (inp) inp.value = lbl;
 
-  // Auto-login if saved token exists
-  const savedToken = localStorage.getItem('upstox_token');
-  if (savedToken && savedToken.length > 10) {
-    initWithToken(savedToken);
-  } else {
-    // Show auth screen
-    document.getElementById('authScreen').style.display = 'flex';
-    document.getElementById('mainApp').style.display    = 'none';
-    // Pre-fill token field if partially saved
-    const tokenField = document.getElementById('directToken');
-    if (tokenField && savedToken) tokenField.value = savedToken;
+    // Auto-login if saved token exists
+    const savedToken = localStorage.getItem('upstox_token');
+    if (savedToken && savedToken.length > 10) {
+      initWithToken(savedToken);
+    } else {
+      // Show auth screen
+      const authScreen = document.getElementById('authScreen');
+      const mainApp = document.getElementById('mainApp');
+      if (authScreen) authScreen.style.display = 'flex';
+      if (mainApp) mainApp.style.display = 'none';
+      // Pre-fill token field if partially saved
+      const tokenField = document.getElementById('directToken');
+      if (tokenField && savedToken) tokenField.value = savedToken;
+    }
+    console.log('Page initialized successfully');
+  } catch (e) {
+    console.error('Initialization error:', e);
   }
 });
 
@@ -3190,9 +3264,9 @@ function analyzeOptionChain() {
     }
 
     // 2. Max Pain — weight increases as expiry approaches
-    const painSteps = Math.abs(maxPainDiff) / step;
+    const painSteps2 = Math.abs(maxPainDiff) / step;
     const painWeight = nearExpiry ? 1.5 : 1.0; // near expiry = more pull
-    const effectivePainSteps = painSteps * painWeight;
+    const effectivePainSteps = painSteps2 * painWeight;
     if (effectivePainSteps >= 3) {
       if (maxPainDiff > 0) { score += 2; signals.push({ type:'bull', signal:'Max Pain Far Above Spot (+' + Math.round(maxPainDiff) + ')', detail: `Max Pain ${Math.round(maxPainDiff)} pts upar — ${nearExpiry?'Expiry kal hai, pull aaj se strong hoga!':'Expiry tak upward pull expected.'}` }); }
       else { score -= 2; signals.push({ type:'bear', signal:'Max Pain Far Below Spot (' + Math.round(maxPainDiff) + ')', detail: `Max Pain ${Math.abs(Math.round(maxPainDiff))} pts neeche — ${nearExpiry?'Expiry kal, downward pull strong!':'Expiry tak downward pull.'}` }); }
@@ -3265,8 +3339,8 @@ function analyzeOptionChain() {
   if (expiryDay) confidence = Math.max(50, confidence - 10);
 
   const confLabel = confidence >= 80 ? 'HIGH' : confidence >= 65 ? 'MODERATE' : 'LOW';
-  const resistance = maxCallStrike;
-  const support    = maxPutStrike;
+  const resistance2 = maxCallStrike;
+  const support2    = maxPutStrike;
 
   const pcrReading = pcr > 1.5 ? 'Very bullish — heavy put writing' :
                      pcr > 1.2 ? 'Bullish bias — puts dominant' :
@@ -3286,10 +3360,10 @@ function analyzeOptionChain() {
   const riskFactors = expiryDay
     ? `EXPIRY DAY: ${lastHour ? 'Last hour hai — extreme gamma risk. ' : ''}Max Pain ${maxPain} strongest level. Writers ${maxPain} ke paas expire karna chahenge. Theta buyers ko kha jayega.`
     : score > 0
-    ? `${resistance} toot gaya toh rally accelerate. ${support} break pe trend reverse.`
+    ? `${resistance2} toot gaya toh rally accelerate. ${support2} break pe trend reverse.`
     : score < 0
-    ? `${support} hold karna important. ${resistance} cross pe bearish view invalid.`
-    : `Market ${support}-${resistance} range mein — breakout direction pe depend karo.`;
+    ? `${support2} hold karna important. ${resistance2} cross pe bearish view invalid.`
+    : `Market ${support2}-${resistance2} range mein — breakout direction pe depend karo.`;
 
   const bullishTrade = expiryDay
     ? `Expiry Din: 23700 CE buy SIRF agar spot 23750+ sustain kare 15-min mein. Warna AVOID.`
@@ -3301,7 +3375,7 @@ function analyzeOptionChain() {
     ? `Expiry Din Best: Short Straddle/Strangle ya kuch mat lo — theta aapke against extreme fast!`
     : `Iron Condor: Sell ${atm - step} PE + Buy ${atm - step*2} PE + Sell ${atm + step} CE + Buy ${atm + step*2} CE`;
 
-  const suggestedRange = `${support}-${resistance}`;
+  const suggestedRange = `${support2}-${resistance2}`;
 
   const dteStr = expiryDay ? ' (EXPIRY TODAY🔴)' : nearExpiry ? ` (${dte}d left ⚠)` : ` (${dte}d left)`;
 
@@ -3309,16 +3383,16 @@ function analyzeOptionChain() {
     `PCR ${pcr.toFixed(2)} ${pcr > 1 ? '(put-heavy, bullish bias)' : '(call-heavy, bearish bias)'}. ` +
     `Max Pain ${maxPain} — spot se ${Math.round(Math.abs(maxPainDiff))} pts ${maxPainDiff >= 0 ? 'upar' : 'neeche'}. ` +
     (expiryDay ? `EXPIRY DAY: Theta decay maximum. Max Pain magnet sabse strong aaj. ` : '') +
-    `Key resistance ${resistance} (highest call OI), key support ${support} (highest put OI). ` +
+    `Key resistance2 ${resistance2} (highest call OI), key support2 ${support2} (highest put OI). ` +
     `${dirClass === 'bullish' ? 'Market upar jaane ke zyada chances.' : dirClass === 'bearish' ? 'Market neeche aane ke zyada chances.' : 'Sideways movement expected.'}`;
 
   return {
     direction, dirClass, confidence, confidence_label: confLabel,
     score, summary, key_signals: signals,
-    support_level: support, resistance_level: resistance,
+    support_level: support2, resistance2_level: resistance2,
     suggested_range: suggestedRange,
     trade_ideas: { bullish_trade: bullishTrade, bearish_trade: bearishTrade, neutral_trade: neutralTrade,
-      key_levels: `Support: ${support} | Resistance: ${resistance} | Max Pain: ${maxPain}` },
+      key_levels: `Support: ${support2} | Resistance: ${resistance2} | Max Pain: ${maxPain}` },
     pcr_reading: pcrReading, max_pain_reading: mpReading,
     iv_reading: ivReading, risk_factors: riskFactors,
     expiry_context: { dte, expiryDay, nearExpiry, lastHour },
@@ -3565,8 +3639,11 @@ function renderChart(data, type = 'oi') {
 
   const ctx = document.getElementById('oiChartCanvas').getContext('2d');
   if (oiChart) { oiChart.destroy(); oiChart = null; }
-  // Datalabels plugin OI chart mein nahi chahiye - unregister karo
+  // Unregister EMA-specific plugins for OI chart
   try { if (window.ChartDataLabels) Chart.unregister(ChartDataLabels); } catch(e) {}
+  try { Chart.unregister(candleDrawPlugin); } catch(e) {}
+  try { Chart.unregister(tradingViewCrosshairPlugin); } catch(e) {}
+  try { Chart.unregister(yAxisLabelsPlugin); } catch(e) {}
 
   const labels   = data.strikes.map(s => s.toLocaleString('en-IN'));
   const atmIdx   = data.strikes.indexOf(data.atm);
@@ -3590,8 +3667,82 @@ function renderChart(data, type = 'oi') {
       '<span style="color:var(--muted);font-family:var(--font-mono);font-size:10px;">⚠ ' + yLabel + ' data available nahi — API se nahi aaya</span>';
   }
 
-  // Build signal annotations
+  // Build signal annotations — Support/Resistance/MaxPain/TP/SL
   const signalAnnotations = {};
+  
+  // ── Support, Resistance, MaxPain from live chain data ──
+  if (chainData && chainData.length) {
+    const liveSpot2 = chainData[0]?.underlying_spot_price || 0;
+    const maxPainLevel = calcMaxPain(chainData, liveSpot2);
+    let maxCOI=0, maxPOI=0, resStrike=0, supStrike=0;
+    chainData.forEach(d => {
+      const ceOI = d.call_options?.market_data?.oi || 0;
+      const peOI = d.put_options?.market_data?.oi  || 0;
+      if (Math.abs(d.strike_price - liveSpot2) <= 2000) {
+        if (ceOI > maxCOI) { maxCOI = ceOI; resStrike = d.strike_price; }
+        if (peOI > maxPOI) { maxPOI = peOI; supStrike = d.strike_price; }
+      }
+    });
+    if (resStrike) signalAnnotations['resist_line'] = {
+      type:'line', scaleID:'y', value:resStrike,
+      borderColor:'rgba(255,61,107,.7)', borderWidth:1.5, borderDash:[6,3],
+      label:{ content:'R: '+resStrike, enabled:true, position:'start',
+        color:'#ff3d6b', backgroundColor:'rgba(255,61,107,.15)',
+        font:{family:'Space Mono',size:9} }
+    };
+    if (supStrike) signalAnnotations['support_line'] = {
+      type:'line', scaleID:'y', value:supStrike,
+      borderColor:'rgba(0,229,160,.7)', borderWidth:1.5, borderDash:[6,3],
+      label:{ content:'S: '+supStrike, enabled:true, position:'start',
+        color:'#00e5a0', backgroundColor:'rgba(0,0,0,.8)',
+        font:{family:'Space Mono',size:9,weight:'bold'}, borderRadius:3, padding:3 }
+    };
+    if (maxPainLevel) signalAnnotations['maxpain_line'] = {
+      type:'line', scaleID:'y', value:maxPainLevel,
+      borderColor:'rgba(255,208,0,.8)', borderWidth:2, borderDash:[8,4],
+      label:{ content:'MaxPain: '+maxPainLevel, enabled:true, position:'start',
+        color:'#ffd000', backgroundColor:'rgba(0,0,0,.8)',
+        font:{family:'Space Mono',size:9,weight:'bold'}, borderRadius:3, padding:3 }
+    };
+    // ── TP1, TP2, SL based on last signal ──
+    const lastCESig = (() => {
+      const allSigs = chartDataCache?._lastCsvBuyCE;
+      return allSigs?.length ? allSigs[allSigs.length-1] : null;
+    })();
+    if (liveSpot2 > 0) {
+      const atmRow3 = chainData.find(d => {
+        const step3 = INSTRUMENTS[document.getElementById('symbolSel')?.value]?.step || 50;
+        return d.strike_price === Math.round(liveSpot2/step3)*step3;
+      });
+      const atmLTP = atmRow3?.call_options?.market_data?.ltp || 0;
+      if (atmLTP > 0) {
+        // CE buy trade levels
+        const sl_price  = liveSpot2 - atmLTP * 0.6;   // SL: spot - 60% of premium
+        const tp1_price = liveSpot2 + atmLTP * 1.2;   // TP1: +120% premium worth
+        const tp2_price = liveSpot2 + atmLTP * 2.5;   // TP2: +250% premium worth
+        signalAnnotations['sl_line'] = {
+          type:'line', scaleID:'y', value:sl_price,
+          borderColor:'rgba(255,30,60,.6)', borderWidth:1.5, borderDash:[4,4],
+          label:{ content:'SL: '+sl_price.toFixed(0), enabled:true, position:'end',
+            color:'#ff1a4a', backgroundColor:'rgba(255,30,60,.12)', font:{family:'Space Mono',size:8} }
+        };
+        signalAnnotations['tp1_line'] = {
+          type:'line', scaleID:'y', value:tp1_price,
+          borderColor:'rgba(0,229,160,.5)', borderWidth:1.5, borderDash:[4,4],
+          label:{ content:'TP1: '+tp1_price.toFixed(0), enabled:true, position:'end',
+            color:'#00e5a0', backgroundColor:'rgba(0,229,160,.12)', font:{family:'Space Mono',size:8} }
+        };
+        signalAnnotations['tp2_line'] = {
+          type:'line', scaleID:'y', value:tp2_price,
+          borderColor:'rgba(0,229,160,.8)', borderWidth:2, borderDash:[4,2],
+          label:{ content:'TP2: '+tp2_price.toFixed(0), enabled:true, position:'end',
+            color:'#00ff88', backgroundColor:'rgba(0,229,160,.18)', font:{family:'Space Mono',size:8,weight:'bold'} }
+        };
+      }
+    }
+  }
+  
+  // Build signal annotations (OI chart signals)
   data.signals.forEach((sig, i) => {
     if (!sig) return;
     signalAnnotations['sig_' + i] = {
@@ -3706,14 +3857,14 @@ function renderChart(data, type = 'oi') {
             }
           }
         },
-        annotation: { annotations: signalAnnotations }
+        annotation: { annotations: {...signalAnnotations} }
       },
       scales: {
         x: {
           grid: { color: 'rgba(30,48,80,0.5)' },
           ticks: {
             color: '#4a6a8a', font: { family: 'Space Mono', size: 9 },
-            maxRotation: 45, minRotation: 45,
+            maxRotation: 0, minRotation: 0, autoSkip: true, maxTicksLimit: 10,
             callback: function(val, idx) {
               const s = data.strikes[idx];
               if (s === data.atm) return '📍' + s.toLocaleString('en-IN');
@@ -4226,14 +4377,20 @@ function runMarketIntelligence() {
   const spotMomo    = spot - spotPrev10; // pts in last ~4 min
 
   const verdict = (() => {
-    // Expiry day — no option buy, show spot direction only
+    // Get ATM prices locally to avoid scope issues
+    const atmCEdata = chainData.find(d => d.strike_price === atm)?.call_options?.market_data || {};
+    const atmPEdata = chainData.find(d => d.strike_price === atm)?.put_options?.market_data || {};
+    const cePrice = atmCEdata.ltp || 0;
+    const pePrice = atmPEdata.ltp || 0;
+    
+    // Expiry day — SELL strategies only
     if (dteGate === 'expiry') {
-      if (score >= 2) return { label:'BULLISH SPOT 🚀 (Expiry — Options mat kharido)', color:'var(--green)', bg:'rgba(0,229,160,.08)', border:'rgba(0,229,160,.3)',
-        action:`⚡ EXPIRY DAY: Spot upar ja sakta hai lekin CE/PE mat kharido — Theta -${Math.abs(atmCEtheta).toFixed(0)}/day. PCR=${livePCR.toFixed(2)} bullish hai.` };
-      if (score <= -2) return { label:'BEARISH SPOT 📉 (Expiry — Options mat kharido)', color:'var(--red)', bg:'rgba(255,61,107,.08)', border:'rgba(255,61,107,.3)',
-        action:`⚡ EXPIRY DAY: Spot neeche ja sakta hai lekin PE mat kharido — Theta kha jayega.` };
-      return { label:'EXPIRY — WAIT ⏳', color:'var(--yellow)', bg:'rgba(255,208,0,.06)', border:'rgba(255,208,0,.2)',
-        action:`⚡ Expiry pe options buying BAND. Spot direction unclear. Wait karo.` };
+      if (score >= 2) return { label:'BULLISH -- SELL PE', color:'#00ff88', bg:'rgba(0,255,136,.15)', border:'rgba(0,255,136,.5)',
+        action:'EXPIRY DAY: Spot upar ja sakta hai (PCR ' + livePCR.toFixed(2) + '). SELL PE @ ' + atm + ' PE Rs.' + pePrice.toFixed(1) + ' -- Theta aapka friend! CE mat karo. SL: +50%, Target: -30%.' };
+      if (score <= -2) return { label:'BEARISH -- SELL CE', color:'#ff4466', bg:'rgba(255,68,102,.15)', border:'rgba(255,68,102,.5)',
+        action:'EXPIRY DAY: Spot neeche ja sakta hai. SELL CE @ ' + atm + ' CE Rs.' + cePrice.toFixed(1) + ' -- Theta aapka friend! PE mat karo. SL: +50%, Target: -30%.' };
+      return { label:'EXPIRY -- SELL STRADDLE', color:'#ffcc00', bg:'rgba(255,204,0,.15)', border:'rgba(255,204,0,.5)',
+        action:'EXPIRY DAY: Direction unclear. SHORT STRADDLE -- SELL CE Rs.' + cePrice.toFixed(1) + ' + SELL PE Rs.' + pePrice.toFixed(1) + ' @ ' + atm + '. Theta se dono taraf profit.' };
     }
     // Strong seller (IV>35%)
     if (ivGate === 'strong_seller') {
@@ -4248,13 +4405,13 @@ function runMarketIntelligence() {
     }
     // Seller day (IV>25%)
     if (ivGate === 'seller') {
-      const spok = score >= 2 && livePCR > 1.2;
+      const spokS = score >= 2 && livePCR > 1.2;
       const spok2= score >= 1 && livePCR > 1.1;
-      const scok = score <= -2;
+      const scokS = score <= -2;
       const scok2= score <= -1 && livePCR < 0.9;
-      if (spok || spok2) return { label:'💰 SELL PE (SELLER DAY)', color:'#ff9f40', bg:'rgba(255,159,64,.08)', border:'rgba(255,159,64,.4)',
-        action:`💰 IV ${atmCEiv.toFixed(0)}%>25 + EMA BULL + PCR ${livePCR.toFixed(2)}>1.1 → SELL PE. 6-day: ${spok?'71%':'70%'} win. Stop: 50% premium increase.` };
-      if (scok || scok2) return { label:'💰 SELL CE (SELLER DAY)', color:'#ff9f40', bg:'rgba(255,159,64,.08)', border:'rgba(255,159,64,.4)',
+      if (spokS || spok2) return { label:'💰 SELL PE (SELLER DAY)', color:'#ff9f40', bg:'rgba(255,159,64,.08)', border:'rgba(255,159,64,.4)',
+        action:`💰 IV ${atmCEiv.toFixed(0)}%>25 + EMA BULL + PCR ${livePCR.toFixed(2)}>1.1 → SELL PE. 6-day: ${spokS?'71%':'70%'} win. Stop: 50% premium increase.` };
+      if (scokS || scok2) return { label:'💰 SELL CE (SELLER DAY)', color:'#ff9f40', bg:'rgba(255,159,64,.08)', border:'rgba(255,159,64,.4)',
         action:`💰 IV ${atmCEiv.toFixed(0)}%>25 + EMA BEAR + PCR ${livePCR.toFixed(2)}<0.9 → SELL CE. 6-day: ${scok2?'62%':'61%'} win. Stop: 50% premium increase.` };
       return { label:'🔴 SELLER DAY — WAIT', color:'var(--red)', bg:'rgba(255,61,107,.05)', border:'rgba(255,61,107,.2)',
         action:`🔴 IV ${atmCEiv.toFixed(0)}%>25. Mixed signals. Buyers 36-40%. WAIT.` };
@@ -4266,12 +4423,17 @@ function runMarketIntelligence() {
       const choppyNow = emaFlips >= 8;
       
       // Choppy day: EMA flip > 8 times = no trade
-      if (choppyNow) return { label:'↔ CHOPPY DAY — NO TRADE', color:'var(--yellow)', bg:'rgba(255,208,0,.08)', border:'rgba(255,208,0,.3)',
-        action:`↔ EMA ${emaFlips}x flip hua aaj — choppy market. IV ${atmCEiv.toFixed(0)}% risky zone mein bhi hai. 7-din: no trade best. Wait karo.` };
+      if (choppyNow && atmCEiv > 18) return { label:'↔ CHOPPY+RISKY', color:'var(--yellow)', bg:'rgba(255,208,0,.08)', border:'rgba(255,208,0,.3)',
+        action:`↔ EMA ${emaFlips}x flip + IV ${atmCEiv.toFixed(0)}% risky. 9-din: 8/9 din choppy = normal. CE/PE ratio dekho — >1.15 = PE buy 89%! <0.87 = CE buy. Extra caution.` };
       
-      // EMA BULL + PCR>1.15 = 61% CE win (7-day data)
-      if (score >= 2 && livePCR > 1.15) return { label:'🟡 CE BUY — RISKY (61%)', color:'#ffd000', bg:'rgba(255,208,0,.10)', border:'rgba(255,208,0,.4)',
-        action:`🟡 EMA BULL + PCR ${livePCR.toFixed(2)}>1.15. 7-din: 61% CE win avg +1.2. IV ${atmCEiv.toFixed(0)}% risky. Chhoti position: ${fmtN(atm)} CE. Stop: 40%.` };
+      // EMA BULL + PCR>1.15: CE/PE filter = 84% win if ratio<1.05, only 24% if >=1.05!
+      if (score >= 2 && livePCR > 1.15) {
+        const cepeNow = (() => { const aR=chainData?.find(d=>d.strike_price===atm); const cl=aR?.call_options?.market_data?.ltp||0; const pl=aR?.put_options?.market_data?.ltp||0; return cl>0&&pl>0?cl/pl:1; })();
+        if (cepeNow >= 1.05) return { label:`🔴 CE AVOID CE/PE=${cepeNow.toFixed(2)}`, color:'var(--red)', bg:'rgba(255,61,107,.06)', border:'rgba(255,61,107,.2)',
+          action:`🔴 CE/PE=${cepeNow.toFixed(2)}≥1.05: CE heavy! 9-din sirf 24% CE win. ${cepeNow>1.15?'BUY PE 89% win instead!':'Wait CE/PE<1.05.'}` };
+        return { label:`✅ CE BUY 84% CE/PE=${cepeNow.toFixed(2)}`, color:'#00e5a0', bg:'rgba(0,229,160,.10)', border:'rgba(0,229,160,.4)',
+          action:`✅ CE/PE=${cepeNow.toFixed(2)}<1.05 + PCR ${livePCR.toFixed(2)}>1.15 + BULL = 84% CE win! IV ${atmCEiv.toFixed(0)}% risky. ${fmtN(atm)} CE. Stop: 40%.` };
+      }
       
       // EMA BULL + PCR>1.1 = 60% CE win
       if (score >= 1 && livePCR > 1.1) return { label:'🟡 CE POSSIBLE — RISKY (60%)', color:'#ffd000', bg:'rgba(255,208,0,.08)', border:'rgba(255,208,0,.3)',
@@ -4302,7 +4464,7 @@ function runMarketIntelligence() {
     `OI Build → ${putOIbuild>callOIbuild?'✅ Put writers dominant (bull)':'❌ Call writers dominant (bear)'}`,
     `EMA 6 Bias → ${emaBias==='BULLISH'?'✅ Bullish':emaBias==='BEARISH'?'❌ Bearish':'➡ Neutral'}`,
     rsiVal ? `RSI ${rsiVal.toFixed(0)} → ${rsiVal>60?'✅ Bullish zone':rsiVal<40?'❌ Bearish zone':'➡ Neutral'}` : 'RSI → Chart load karo',
-    `IV Env → ${atmCEiv>25?'🔴 >25% SELLER DAY':atmCEiv>18?'⚠️ 18-25% Risky':'✅ <18% Buyer Safe'} (${atmCEiv.toFixed(0)}%)`,
+    `IV Env → ${atmCEiv>35?'🔴 >35% STRONG SELLER (61%CE/67%PE)':atmCEiv>25?'🔴 >25% SELLER DAY (SELL PE 82%)':atmCEiv>18?'⚠️ 18-25% Risky (53% CE)':atmCEiv>15?'🔴 15-18% VERY RISKY (44% CE!)':'✅ <15% BUY ZONE (83%)'} (${atmCEiv.toFixed(0)}%)`,
     `EMA Flips → ${(window._emaFlipCount||0)>=8?'↔ CHOPPY ('+(window._emaFlipCount||0)+'x flip) NO TRADE':'✅ Stable ('+(window._emaFlipCount||0)+'x flip)'}`,
     (() => { const atmR2=chainData?.find(d=>d.strike_price===Math.round((chainData[0]?.underlying_spot_price||0)/((INSTRUMENTS[document.getElementById('symbolSel')?.value]?.step)||50))*((INSTRUMENTS[document.getElementById('symbolSel')?.value]?.step)||50)); const c2=atmR2?.call_options?.market_data?.ltp||0; const p2=atmR2?.put_options?.market_data?.ltp||0; const r2=c2>0&&p2>0?c2/p2:1; return r2>1.15?`🔴 CE/PE=${r2.toFixed(2)} CE HEAVY → TOP near. Exit CE, consider PE`:r2<0.87?`🟢 CE/PE=${r2.toFixed(2)} PE HEAVY → BOTTOM near. BUY CE opportunity!`:`↔ CE/PE=${r2.toFixed(2)} Balanced`; })(),
     spotMomo !== 0 ? `Spot Momo (4min) → ${spotMomo>200?'🚀 STRONG BULL +'+spotMomo.toFixed(0):spotMomo<-200?'📉 STRONG BEAR '+spotMomo.toFixed(0):spotMomo>0?'+'+spotMomo.toFixed(0):spotMomo.toFixed(0)} pts` : 'Spot Momo → Loading...',
@@ -4581,16 +4743,16 @@ function buildStrategy(name) {
     premium = -net;
   } else if (name === 'bear_ps') {
     const hs = atm, ls = atm - step * 2;
-    const buyLTP  = getPE(hs).ltp || 0;
-    const sellLTP = getPE(ls).ltp || 0;
-    const net = (buyLTP - sellLTP) * qty;
-    maxLoss = net; maxProfit = (hs - ls - buyLTP + sellLTP) * qty;
-    breakevens = [hs - (buyLTP - sellLTP)];
+    const bpBuyLTP  = getPE(hs).ltp || 0;
+    const bpSellLTP = getPE(ls).ltp || 0;
+    const bpNet = (bpBuyLTP - bpSellLTP) * qty;
+    maxLoss = bpNet; maxProfit = (hs - ls - bpBuyLTP + bpSellLTP) * qty;
+    breakevens = [hs - (bpBuyLTP - bpSellLTP)];
     legs = [
-      { label: 'LEG 1', action: 'BUY',  type: 'PE', strike: hs, ltp: buyLTP,  side:'buy'  },
-      { label: 'LEG 2', action: 'SELL', type: 'PE', strike: ls, ltp: sellLTP, side:'sell' },
+      { label: 'LEG 1', action: 'BUY',  type: 'PE', strike: hs, ltp: bpBuyLTP,  side:'buy'  },
+      { label: 'LEG 2', action: 'SELL', type: 'PE', strike: ls, ltp: bpSellLTP, side:'sell' },
     ];
-    premium = -net;
+    premium = -bpNet;
   } else if (name === 'iron_condor') {
     const sc = atm + step, bc = atm + step * 2;
     const sp = atm - step, bp = atm - step * 2;
@@ -4606,13 +4768,13 @@ function buildStrategy(name) {
       { label: 'LEG 4', action: 'BUY',  type: 'PE', strike: bp, ltp: bpLTP, side:'buy'  },
     ];
   } else if (name === 'covered_call') {
-    const cLTP = getCE(atm + step).ltp || 0;
-    premium = cLTP * qty;
-    maxProfit = (step + cLTP) * qty; maxLoss = (spot - cLTP) * qty;
-    breakevens = [spot - cLTP];
+    const cLTP2 = getCE(atm + step).ltp || 0;
+    premium = cLTP2 * qty;
+    maxProfit = (step + cLTP2) * qty; maxLoss = (spot - cLTP2) * qty;
+    breakevens = [spot - cLTP2];
     legs = [
       { label: 'LEG 1', action: 'BUY',  type: 'SPOT', strike: spot, ltp: spot, side:'buy'  },
-      { label: 'LEG 2', action: 'SELL', type: 'CE', strike: atm + step, ltp: cLTP, side:'sell' },
+      { label: 'LEG 2', action: 'SELL', type: 'CE', strike: atm + step, ltp: cLTP2, side:'sell' },
     ];
   }
 
@@ -4705,9 +4867,98 @@ let activeStrategies = [
     colorLong:  '#00e5a0',
     colorShort: '#ff3d6b',
     visible: true,
-    signals: [],   // filled by runBacktest()
+    signals: [],
+  },
+  {
+    id: 'strat_csv',
+    name: 'CSV Strategy',
+    colorLong:  '#00c9ff',
+    colorShort: '#ff9f40',
+    visible: true,
+    signals: [],  // filled by calcCsvStrategySignals()
   },
 ];
+
+/* ══ 8-DAY CSV STRATEGY SIGNAL CALCULATOR ══════════
+   Rules from 867 rows of real data:
+   BUY CE:  IV<15 + EMA BULL + PCR>1.0   (83% win)
+            OR IV 18-25 + EMA BULL + PCR>1.15 (59% win)
+            OR CE/PE ratio < 0.87 (PE heavy = bottom)
+   BUY PE:  IV<15 + EMA BEAR + PCR<1.0   (83% win)
+            OR CE/PE ratio > 1.15 (CE heavy = top)
+   SELL PE: IV>25 + EMA BULL + PCR>1.1   (82% win)
+   SELL CE: IV>25 + EMA BEAR + PCR<0.9   (57% win)
+   NO TRADE: EMA flips > 8 (choppy), OR DTE=0
+══════════════════════════════════════════════════ */
+function calcCsvStrategySignals(candles, emaCloseFull, emaOpenFull, liveIV, livePCR, liveOI) {
+  const signals = { buyCE:[], buyPE:[], sellCE:[], sellPE:[], noTrade:[] };
+  const n = candles.length;
+  if (!emaCloseFull || !emaOpenFull || n < 4) return signals;
+
+  // Count recent EMA flips (last 20 bars) for choppy detection
+  let recentFlips = 0;
+  const checkFrom = Math.max(0, n - 20);
+  for (let i = checkFrom+1; i < n; i++) {
+    const prevBull = emaCloseFull[i-1] != null && emaOpenFull[i-1] != null && emaCloseFull[i-1] > emaOpenFull[i-1];
+    const currBull = emaCloseFull[i]   != null && emaOpenFull[i]   != null && emaCloseFull[i]   > emaOpenFull[i];
+    if (prevBull !== currBull) recentFlips++;
+  }
+  const isChoppy = recentFlips >= 5;  // 5+ flips in last 20 bars = choppy
+
+  for (let i = 3; i < n; i++) {
+    const ec = emaCloseFull[i], eo = emaOpenFull[i];
+    const ec1= emaCloseFull[i-1], eo1= emaOpenFull[i-1];
+    if (ec==null||eo==null||ec1==null||eo1==null) continue;
+
+    const bullCross = ec1 <= eo1 && ec > eo;
+    const bearCross = ec1 >= eo1 && ec < eo;
+
+    // Only generate signal on EMA cross event
+    if (!bullCross && !bearCross) continue;
+    if (isChoppy && iv > 18) { signals.noTrade.push(i); continue; }
+
+    const iv   = liveIV  || 20;
+    const pcr  = livePCR || 1.0;
+    // CE/PE ratio: KEY filter (9-day data proven)
+    // cepe < 1.05 + BUY_CE = 84% win; cepe >= 1.05 = only 24% win!
+    // cepe > 1.15 + BUY_PE = 89% win
+    const cepe = liveOI ? (liveOI.atmCeLtp > 0 && liveOI.atmPeLtp > 0
+                  ? liveOI.atmCeLtp / liveOI.atmPeLtp : 1) : 1;
+    const ceNotHeavy  = cepe < 1.05;   // CE not overpriced → safe to buy CE
+    const ceHeavyTop  = cepe > 1.15;   // CE heavy → top near → BUY PE
+
+    // ── SELL signals (IV>25) — highest confidence ──
+    if (iv > 25) {
+      if (bullCross && pcr > 1.1) { signals.sellPE.push(i); continue; }  // 82%
+      if (bearCross && pcr < 0.9) { signals.sellCE.push(i); continue; }  // 57%
+      if (iv > 35 && bullCross)   { signals.sellPE.push(i); continue; }  // 67%
+      if (iv > 35 && bearCross)   { signals.sellCE.push(i); continue; }  // 61%
+      signals.noTrade.push(i); continue;
+    }
+
+    // ── CE/PE ratio override: strongest signal (89% win) ──
+    if (ceHeavyTop) { signals.buyPE.push(i); continue; }  // TOP near → BUY PE
+
+    // ── Very risky 15-18%: no trade ──
+    if (iv > 15 && iv <= 18) { signals.noTrade.push(i); continue; }
+
+    // ── Risky 18-25%: CE only with ratio filter ──
+    if (iv > 18 && iv <= 25) {
+      if (bullCross && pcr > 1.15 && ceNotHeavy) { signals.buyCE.push(i); continue; }  // 84%!
+      if (bearCross && pcr < 0.9)                 { signals.noTrade.push(i); continue; }
+      signals.noTrade.push(i); continue;
+    }
+
+    // ── Safe zone IV<15 (83% win) ──
+    if (iv <= 15) {
+      if (bullCross && pcr > 1.0 && ceNotHeavy) { signals.buyCE.push(i); continue; }
+      if (bearCross && pcr < 1.0)                { signals.buyPE.push(i); continue; }
+      if (cepe < 0.87)                           { signals.buyCE.push(i); continue; }  // PE heavy = bottom
+      signals.noTrade.push(i);
+    }
+  }
+  return signals;
+}
 
 // ── populateCandleStrikes (alias) ────────────────────
 function populateCandleStrikes() {
@@ -4859,6 +5110,13 @@ function setTf(btn, tf) {
   currentTf = tf;
   window._emaChartKey = null;  // Force chart reload on TF change
 
+  // Auto-set view bars per timeframe for good candle size
+  const TF_VIEW_BARS = {
+    '1minute': 60, '5minute': 48, '15minute': 40,
+    '30minute': 35, 'day': 60, 'week': 52
+  };
+  EMA_VIEW_BARS = TF_VIEW_BARS[tf] || 60;
+
   // Show API limit note
   const note    = document.getElementById('tfApiNote');
   const periodSel = document.getElementById('emaPeriodSel');
@@ -4877,7 +5135,6 @@ function setTf(btn, tf) {
   if (periodSel) {
     const curDays = parseInt(periodSel.value);
     if (curDays > maxDays) {
-      // Find best option <= maxDays
       const opts = [...periodSel.options];
       const best = opts.filter(o => parseInt(o.value) <= maxDays).pop();
       if (best) periodSel.value = best.value;
@@ -4980,7 +5237,7 @@ async function loadEmaChart() {
   const is5m  = tf === '5minute', is15m = tf === '15minute';
   const needsAgg = is5m || is15m;
   const aggMin   = is5m ? 5 : 15;
-  const effectiveDays = needsAgg ? Math.min(days, 10) : days;
+  const effectiveDays = needsAgg ? Math.min(days, 10) : tf === 'day' ? Math.max(days, 60) : tf === 'week' ? Math.max(days, 180) : days;
 
   // IST local date (India = UTC+5:30) — toISOString() UTC deta hai jo galat ho sakta hai
   function toISTDateStr(d) {
@@ -4988,9 +5245,11 @@ async function loadEmaChart() {
     return ist.toISOString().slice(0, 10);
   }
   const now  = new Date();
-  const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000); // aaj ka data ensure karne ke liye +1 din
-  const past = new Date(now.getTime() - effectiveDays * 24 * 60 * 60 * 1000);
-  const toStr   = toISTDateStr(tomorrow);   // +1 day taaki aaj ka data miss na ho
+  // day/week: use today as toStr (Upstox rejects future dates for daily candles)
+  const isDayWeekTf = (tf === 'day' || tf === 'week');
+  const toDate  = isDayWeekTf ? now : new Date(now.getTime() + 24 * 60 * 60 * 1000);
+  const past    = new Date(now.getTime() - effectiveDays * 24 * 60 * 60 * 1000);
+  const toStr   = toISTDateStr(toDate);
   const fromStr = toISTDateStr(past);
 
   let candles = [];
@@ -5005,6 +5264,7 @@ async function loadEmaChart() {
     let raw = histRes?.data?.candles?.length ? [...histRes.data.candles].reverse() : [];
 
     // Step 2: Intraday data (aaj ka live data) — always fetch for minute TFs
+    const isDayTf    = tf === 'day' || tf === 'week';
     const isMinuteTf = ['1minute','5minute','15minute','30minute'].includes(tf) || needsAgg;
     if (isMinuteTf) {
       try {
@@ -5071,8 +5331,9 @@ async function loadEmaChart() {
 
   emaAllCandles = candles;
   emaViewOffset = 0;
-  _cachedSignals = null;  // Clear signal cache on new data load
+  _cachedSignals  = null;
   _signalCacheKey = '';
+  window._csvSigCache = null; window._csvSigCacheKey = '';
   if (subLabel) subLabel.textContent = `${label} · ${tf} · ${candles.length} bars`;
   const btInfo = document.getElementById('btDataInfo');
   const btWarn = document.getElementById('btApiWarn');
@@ -5121,12 +5382,158 @@ const tvCrosshairPlugin = {
   }
 };
 
+// ── Strategy Toggle State ─────────────────────────────────
+window._stratState = { ema: true, csv: false };
+
+function toggleStrategy(type) {
+  window._stratState[type] = !window._stratState[type];
+  const btn = document.getElementById('strat' + type.toUpperCase() + 'Toggle');
+  if (btn) {
+    if (window._stratState[type]) {
+      btn.style.background = type === 'ema' ? 'rgba(0,229,160,.2)' : 'rgba(255,159,64,.2)';
+      btn.style.borderColor = type === 'ema' ? 'rgba(0,229,160,.5)' : 'rgba(255,159,64,.5)';
+      btn.style.color = type === 'ema' ? '#00e5a0' : '#ff9f40';
+    } else {
+      btn.style.background = 'rgba(128,128,128,.2)';
+      btn.style.borderColor = 'rgba(128,128,128,.4)';
+      btn.style.color = '#888';
+    }
+  }
+  // Re-render chart to update signals
+  if (typeof renderEmaChart === 'function') renderEmaChart();
+}
+
+// ── Chart Cursor Mode ─────────────────────────────────────
+window._chartCursorMode = 'cross';
+
+function setChartCursor(mode) {
+  window._chartCursorMode = mode;
+  const canvas = document.getElementById('candleCanvas');
+  const crossBtn = document.getElementById('cursorCrossBtn');
+  const dragBtn = document.getElementById('cursorDragBtn');
+  
+  if (mode === 'cross') {
+    if (canvas) canvas.style.cursor = 'crosshair';
+    if (crossBtn) { crossBtn.style.background='rgba(0,201,255,.2)'; crossBtn.style.borderColor='rgba(0,201,255,.5)'; crossBtn.style.color='#00c9ff'; }
+    if (dragBtn) { dragBtn.style.background='rgba(128,128,128,.2)'; dragBtn.style.borderColor='rgba(128,128,128,.4)'; dragBtn.style.color='#888'; }
+    if (window.candleChart && window.candleChart.options.plugins.zoom) {
+      window.candleChart.options.plugins.zoom.pan = { enabled: false };
+      window.candleChart.options.plugins.zoom.zoom = { wheel:{ enabled:true }, pinch:{ enabled:true }, mode:'x' };
+      window.candleChart.update();
+    }
+    // Re-enable drawing tools based on current tool
+    setDrawTool(activeDrawTool);
+  } else {
+    if (canvas) canvas.style.cursor = 'grab';
+    if (dragBtn) { dragBtn.style.background='rgba(0,201,255,.2)'; dragBtn.style.borderColor='rgba(0,201,255,.5)'; dragBtn.style.color='#00c9ff'; }
+    if (crossBtn) { crossBtn.style.background='rgba(128,128,128,.2)'; crossBtn.style.borderColor='rgba(128,128,128,.4)'; crossBtn.style.color='#888'; }
+    if (window.candleChart && window.candleChart.options.plugins.zoom) {
+      window.candleChart.options.plugins.zoom.pan = { enabled: true, mode:'xy' };
+      window.candleChart.options.plugins.zoom.zoom = { wheel:{ enabled:true, speed:0.05 }, pinch:{ enabled:true }, mode:'xy' };
+      window.candleChart.update();
+    }
+    // Enable mouse drag and disable drawing tools
+    _mouseDrag.active = false;
+    const drawCanvas = document.getElementById('drawingCanvas');
+    if (drawCanvas) { drawCanvas.classList.remove('draw-active','draw-eraser','draw-arrow'); drawCanvas.style.pointerEvents = 'none'; }
+  }
+}
+
+// ── TradingView Style Crosshair Plugin ─────────────────────
+const tradingViewCrosshairPlugin = {
+  id: 'tvCrosshair',
+  lastX: -1,
+  lastY: -1,
+  
+  afterDraw(chart) {
+    if (chart.canvas?.id !== 'candleCanvas') return;
+    if (this.lastX < 0 || this.lastY < 0) return;
+    const { left, right, top, bottom } = chart.chartArea;
+    const { ctx } = chart;
+    
+    if (this.lastX < left || this.lastX > right || this.lastY < top || this.lastY > bottom) return;
+    
+    ctx.save();
+    
+    // Horizontal dotted line
+    ctx.beginPath();
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 4]);
+    ctx.moveTo(left, this.lastY);
+    ctx.lineTo(right, this.lastY);
+    ctx.stroke();
+    
+    // Vertical dotted line
+    ctx.beginPath();
+    ctx.moveTo(this.lastX, top);
+    ctx.lineTo(this.lastX, bottom);
+    ctx.stroke();
+    
+    ctx.setLineDash([]);
+    
+    // Dot at intersection
+    const yScale = chart.scales.y;
+    if (yScale) {
+      const priceAtCross = yScale.getValueForPixel(this.lastY);
+      const yPixel = yScale.getPixelForValue(priceAtCross);
+      ctx.beginPath();
+      ctx.arc(this.lastX, yPixel, 4, 0, 2 * Math.PI);
+      ctx.fillStyle = '#fff';
+      ctx.fill();
+      ctx.strokeStyle = '#00c9ff';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+    
+    // Crosshair Y label in strip — white box like TV
+    const xScale2 = chart.scales.x;
+    if (xScale2 && yScale) {
+      const priceVal = yScale.getValueForPixel(this.lastY);
+      const labelTxt = priceVal?.toFixed(1) || '';
+      const dpr2    = window.devicePixelRatio || 1;
+      const cw2     = chart.canvas.width / dpr2;
+      const sl2     = right;
+      const sw2     = cw2 - sl2;
+      ctx.save();
+      ctx.beginPath(); ctx.rect(sl2, top, sw2, bottom - top); ctx.clip();
+      ctx.font = 'bold 9px "Space Mono"';
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(sl2, this.lastY - 9, sw2, 18);
+      ctx.fillStyle = '#000000';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(labelTxt, sl2 + sw2 / 2, this.lastY);
+      ctx.restore();
+    }
+    
+    ctx.restore();
+  }
+};
+
+// Track mouse position
+document.addEventListener('mousemove', (e) => {
+  const canvas = document.getElementById('candleCanvas');
+  if (!canvas) return;
+  const rect = canvas.getBoundingClientRect();
+  tradingViewCrosshairPlugin.lastX = e.clientX - rect.left;
+  tradingViewCrosshairPlugin.lastY = e.clientY - rect.top;
+  if (window.candleChart) window.candleChart.update('none');
+});
+
+document.addEventListener('mouseleave', () => {
+  tradingViewCrosshairPlugin.lastX = -1;
+  tradingViewCrosshairPlugin.lastY = -1;
+  if (window.candleChart) window.candleChart.update('none');
+});
+
 // ── Custom Candle Drawing Plugin ─────────────────────
 // Chart.js bar chart ke upar canvas pe direct candles draw karta hai
 // Wick aur Body ek saath — bilkul broker app jaisa
 const candleDrawPlugin = {
   id: 'candleDraw',
   afterDatasetsDraw(chart) {
+    if (chart.canvas?.id !== 'candleCanvas') return;
     const view = window._candleView;
     if (!view || !view.length) return;
     const ctx    = chart.ctx;
@@ -5137,13 +5544,24 @@ const candleDrawPlugin = {
     const BULL = 'rgba(0,229,160,.95)';
     const BEAR = 'rgba(255,61,107,.95)';
 
-    // Calculate candle width from bar spacing
+    // Calculate candle width from chart area (Y axis is on right)
     const totalBars = view.length;
-    const chartW    = chart.chartArea.right - chart.chartArea.left;
-    const barW      = Math.max(2, (chartW / totalBars) * 0.7);  // 70% of slot width
-    const wickW     = Math.max(1, barW * 0.08);                 // wick = 8% of bar width
+    const chartArea = chart.chartArea;
+    const chartW  = chartArea.right - chartArea.left;
+    const minX    = chartArea.left;
+    const maxX    = chartArea.right;
+    const barW    = Math.max(2, (chartW / totalBars) * 0.72);
+    const wickW   = Math.max(1, Math.min(2, barW * 0.18));
 
     ctx.save();
+    // Clip candle drawing — allow half-barW past right edge for last candle
+    const _clipBarW = Math.max(2, ((chartArea.right - chartArea.left) / Math.max(view.length,1)) * 0.72);
+    ctx.beginPath();
+    ctx.rect(chartArea.left - _clipBarW/2, chartArea.top - 2, 
+             (chartArea.right - chartArea.left) + _clipBarW/2,
+             chartArea.bottom - chartArea.top + 4);
+    ctx.clip();
+
     view.forEach((c, i) => {
       const [, open, high, low, close] = c;
       const isBull = close >= open;
@@ -5152,6 +5570,9 @@ const candleDrawPlugin = {
       // Get pixel positions
       const xMid  = xScale.getPixelForValue(i);
       if (xMid === undefined) return;
+      
+      // Skip candles outside visible area
+      if (xMid < minX - barW || xMid > maxX + barW) return;
       const yHigh  = yScale.getPixelForValue(high);
       const yLow   = yScale.getPixelForValue(low);
       const yOpen  = yScale.getPixelForValue(open);
@@ -5172,40 +5593,311 @@ const candleDrawPlugin = {
       ctx.fillStyle = color;
       ctx.fillRect(xMid - barW / 2, bodyTop, barW, bodyH);
     });
+
+    // ── Draw Buy/Sell Signals (TradingView Style) ────────────
+    const stratState = window._stratState || { ema: true, csv: false };
+    const viewStart = window._emaViewOffset || 0;
+    
+    // Get signals from chart datasets
+    const chartData = chart.data.datasets || [];
+    let emaSignalsCE = null, emaSignalsPE = null;
+    
+    chartData.forEach(ds => {
+      if (ds._emaCE && stratState.ema) emaSignalsCE = ds.data;
+      if (ds._emaPE && stratState.ema) emaSignalsPE = ds.data;
+    });
+
+    // Draw EMA BUY signals (TradingView style)
+    if (stratState.ema && emaSignalsCE && emaSignalsPE) {
+      const { left, right, top, bottom } = chart.chartArea;
+      
+      view.forEach((c, i) => {
+        const sigCE = emaSignalsCE[viewStart + i];
+        const sigPE = emaSignalsPE[viewStart + i];
+        const xMid = xScale.getPixelForValue(i);
+        
+        if (xMid < left || xMid > right) return;
+        
+        // BUY CE - Green UP arrow
+        if (sigCE !== null && sigCE !== undefined) {
+          const yPrice = yScale.getPixelForValue(c[3] - 15);
+          if (yPrice > top && yPrice < bottom) {
+            ctx.save();
+            ctx.beginPath();
+            ctx.fillStyle = '#00e5a0';
+            ctx.strokeStyle = '#00e5a0';
+            ctx.lineWidth = 2;
+            ctx.moveTo(xMid, yPrice - 4);
+            ctx.lineTo(xMid, yPrice + 12);
+            ctx.moveTo(xMid, yPrice - 4);
+            ctx.lineTo(xMid - 6, yPrice + 6);
+            ctx.moveTo(xMid, yPrice - 4);
+            ctx.lineTo(xMid + 6, yPrice + 6);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.fillStyle = '#00e5a0';
+            ctx.arc(xMid, yPrice + 14, 3, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.font = 'bold 10px Space Mono';
+            ctx.fillStyle = '#00e5a0';
+            ctx.textAlign = 'center';
+            ctx.fillText('CE', xMid, yPrice + 24);
+            ctx.restore();
+          }
+        }
+        
+        // BUY PE - Red DOWN arrow
+        if (sigPE !== null && sigPE !== undefined) {
+          const yPrice = yScale.getPixelForValue(c[2] + 15);
+          if (yPrice > top && yPrice < bottom) {
+            ctx.save();
+            ctx.beginPath();
+            ctx.fillStyle = '#ff3d6b';
+            ctx.strokeStyle = '#ff3d6b';
+            ctx.lineWidth = 2;
+            ctx.moveTo(xMid, yPrice + 4);
+            ctx.lineTo(xMid, yPrice - 12);
+            ctx.moveTo(xMid, yPrice + 4);
+            ctx.lineTo(xMid - 6, yPrice - 6);
+            ctx.moveTo(xMid, yPrice + 4);
+            ctx.lineTo(xMid + 6, yPrice - 6);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.fillStyle = '#ff3d6b';
+            ctx.arc(xMid, yPrice - 14, 3, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.font = 'bold 10px Space Mono';
+            ctx.fillStyle = '#ff3d6b';
+            ctx.textAlign = 'center';
+            ctx.fillText('PE', xMid, yPrice - 22);
+            ctx.restore();
+          }
+        }
+      });
+    }
+
+    // Draw CSV SELL signals (TradingView style)
+    if (stratState.csv) {
+      const csvSells = window._csvSellSignals || [];
+      const { left, right, top, bottom } = chart.chartArea;
+      
+      csvSells.forEach(sig => {
+        const idx = sig.idx - viewStart;
+        if (idx >= 0 && idx < view.length) {
+          const xMid = xScale.getPixelForValue(idx);
+          if (xMid < left || xMid > right) return;
+          
+          const isSellCE = sig.type === 'SELL_CE';
+          const yPrice = isSellCE 
+            ? yScale.getPixelForValue(view[idx][2] + 20)
+            : yScale.getPixelForValue(view[idx][3] - 20);
+          
+          if (yPrice < top || yPrice > bottom) return;
+          
+          const color = isSellCE ? '#ff9f40' : '#00c9ff';
+          
+          ctx.save();
+          ctx.beginPath();
+          ctx.fillStyle = color;
+          ctx.strokeStyle = color;
+          ctx.lineWidth = 2;
+          
+          if (isSellCE) {
+            // SELL CE - Orange DOWN arrow
+            ctx.moveTo(xMid, yPrice + 4);
+            ctx.lineTo(xMid, yPrice - 12);
+            ctx.moveTo(xMid, yPrice + 4);
+            ctx.lineTo(xMid - 6, yPrice - 6);
+            ctx.moveTo(xMid, yPrice + 4);
+            ctx.lineTo(xMid + 6, yPrice - 6);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(xMid, yPrice - 14, 3, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.font = 'bold 10px Space Mono';
+            ctx.textAlign = 'center';
+            ctx.fillText('SELL CE', xMid, yPrice - 22);
+          } else {
+            // SELL PE - Blue UP arrow
+            ctx.moveTo(xMid, yPrice - 4);
+            ctx.lineTo(xMid, yPrice + 12);
+            ctx.moveTo(xMid, yPrice - 4);
+            ctx.lineTo(xMid - 6, yPrice + 6);
+            ctx.moveTo(xMid, yPrice - 4);
+            ctx.lineTo(xMid + 6, yPrice + 6);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(xMid, yPrice + 14, 3, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.font = 'bold 10px Space Mono';
+            ctx.textAlign = 'center';
+            ctx.fillText('SELL PE', xMid, yPrice + 24);
+          }
+          ctx.restore();
+        }
+      });
+    }
+
+    ctx.restore();
+    
+    // ═══ Draw S/R, Max Pain, TP/SL lines directly on candle chart ═══
+    if (window._tpslLevels || showSRLines) {
+      const yScale = chart.scales.y;
+      if (!yScale) return;
+      const { left, right, top, bottom } = chart.chartArea;
+      ctx.save();
+      ctx.font = 'bold 9px "Space Mono"';
+      
+      const drawHLine = (price, color, dash, label, side='end') => {
+        const py = yScale.getPixelForValue(price);
+        if (py < top - 2 || py > bottom + 2) return;
+        ctx.strokeStyle = color; ctx.lineWidth = 1.5;
+        ctx.setLineDash(dash || [6,3]);
+        ctx.beginPath(); ctx.moveTo(left, py); ctx.lineTo(right, py); ctx.stroke();
+        ctx.setLineDash([]);
+        // Label
+        const tw = ctx.measureText(label).width;
+        const lx = side === 'end' ? right - tw - 4 : left + 4;
+        ctx.fillStyle = 'rgba(0,0,0,.75)';
+        ctx.fillRect(lx - 2, py - 9, tw + 4, 18);
+        ctx.fillStyle = color;
+        ctx.textAlign = side === 'end' ? 'right' : 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(label, side === 'end' ? right - 4 : left + 4, py);
+      };
+      
+      // S/R + Max Pain
+      if (showSRLines && window._srLevels) {
+        const { resistance, support, maxPain, spot } = window._srLevels;
+        if (spot)       drawHLine(spot,       'rgba(0,201,255,.7)', [2,2],  `● ${spot.toFixed(0)}`);
+        if (support)    drawHLine(support,    'rgba(0,229,160,.9)', [6,3],  `🛡 SUP ${support}`);
+        if (resistance) drawHLine(resistance, 'rgba(255,61,107,.9)',[6,3],  `🚧 RES ${resistance}`);
+        if (maxPain)    drawHLine(maxPain,    'rgba(255,107,0,.9)', [4,2],  `🎯 PAIN ${maxPain}`);
+      }
+      
+      // TP/SL levels
+      if (showTPSL && window._tpslLevels?.length) {
+        window._tpslLevels.forEach(lvl => {
+          drawHLine(lvl.entry, lvl.color,       [],    `ENTRY ${lvl.entry.toFixed(1)}`);
+          drawHLine(lvl.tp1,   '#00e5a0',        [4,3], `TP1 ${lvl.tp1.toFixed(1)}`);
+          drawHLine(lvl.tp2,   '#00c896',        [4,3], `TP2 ${lvl.tp2.toFixed(1)}`);
+          drawHLine(lvl.sl,    '#ff3d6b',        [4,3], `SL ${lvl.sl.toFixed(1)}`);
+        });
+      }
+      
+      ctx.restore();
+    }
+  }
+};
+
+// ── TradingView-style Y axis strip plugin ────────────────────────────
+// Draws: price ticks, last price (cyan box), S/R/MaxPain/SL/TP labels
+// ALL inside the 55px right strip — zero chart-area intrusion
+const YSTRIP_W = 55;
+const yAxisLabelsPlugin = {
+  id: 'yAxisLabels',
+  afterDraw(chart) {
+    if (chart.canvas?.id !== 'candleCanvas') return;
+    const yScale = chart.scales.y;
+    if (!yScale) return;
+    const { right, top, bottom, left } = chart.chartArea;
+    const ctx   = chart.ctx;
+    const dpr   = window.devicePixelRatio || 1;
+    const cw    = chart.canvas.width  / dpr;
+    const sl    = right;          // strip left edge = chart right
+    const sw    = Math.max(52, cw - sl);  // strip width min 52px
+
+    ctx.save();
+    ctx.beginPath(); ctx.rect(sl, top - 2, sw + 2, bottom - top + 4); ctx.clip();
+
+    // Strip background
+    ctx.fillStyle = '#070b12';
+    ctx.fillRect(sl, top - 2, sw + 2, bottom - top + 4);
+
+    // Thin separator line
+    ctx.strokeStyle = 'rgba(255,255,255,.12)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(sl, top); ctx.lineTo(sl, bottom); ctx.stroke();
+
+    ctx.font = '9px "Space Mono"';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+
+    // ── Price grid ticks ──
+    (yScale.ticks || []).forEach(tick => {
+      const py = yScale.getPixelForValue(tick.value);
+      if (py < top || py > bottom) return;
+      ctx.strokeStyle = 'rgba(255,255,255,.1)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([]);
+      ctx.beginPath(); ctx.moveTo(sl, py); ctx.lineTo(sl + 4, py); ctx.stroke();
+      ctx.fillStyle = 'rgba(160,190,215,.65)';
+      ctx.fillText(tick.value.toFixed(0), sl + 6, py);
+    });
+
+    // ── Annotation level labels (S/R/MaxPain/SL/TP) ──
+    const levels = [
+      { key:'ema_res',  color:'#ff5577', label: v => '⛔R '  +v.toFixed(0) },
+      { key:'ema_sup',  color:'#00e5a0', label: v => '🛡S '  +v.toFixed(0) },
+      { key:'ema_mp',   color:'#ffd000', label: v => '🎯'    +v.toFixed(0) },
+      { key:'ema_spot', color:'#00c9ff', label: v => '●'     +v.toFixed(0) },
+      { key:'ema_sl',   color:'#ff3355', label: v => 'SL '   +v.toFixed(0) },
+      { key:'ema_tp1',  color:'#00c896', label: v => 'TP1 '  +v.toFixed(0) },
+      { key:'ema_tp2',  color:'#00ff88', label: v => 'TP2 '  +v.toFixed(0) },
+    ];
+    if (chart.options?.plugins?.annotation?.annotations) {
+      const anns = chart.options.plugins.annotation.annotations;
+      levels.forEach(({ key, color, label }) => {
+        const ann = anns[key];
+        if (!ann) return;
+        const py = yScale.getPixelForValue(ann.value);
+        if (py < top || py > bottom) return;
+        const txt = label(ann.value);
+        ctx.font = '8px "Space Mono"';
+        const tw = ctx.measureText(txt).width;
+        ctx.fillStyle = 'rgba(7,11,18,.9)';
+        ctx.fillRect(sl + 1, py - 8, Math.min(tw + 6, sw - 2), 16);
+        ctx.fillStyle = color;
+        ctx.fillText(txt, sl + 3, py);
+      });
+    }
+
+    // ── Last price (cyan highlighted box — TV style) ──
+    if (emaAllCandles.length) {
+      const lastC = emaAllCandles[emaAllCandles.length - 1 - emaViewOffset];
+      if (lastC) {
+        const price = lastC[4];
+        const py = yScale.getPixelForValue(price);
+        if (py >= top && py <= bottom) {
+          // Dashed line across chart area
+          ctx.restore(); ctx.save();
+          ctx.setLineDash([4,3]);
+          ctx.strokeStyle = 'rgba(0,201,255,.45)';
+          ctx.lineWidth = 1;
+          ctx.beginPath(); ctx.moveTo(left, py); ctx.lineTo(right, py); ctx.stroke();
+          ctx.setLineDash([]);
+          // Clip to strip again
+          ctx.beginPath(); ctx.rect(sl, top - 2, sw + 2, bottom - top + 4); ctx.clip();
+          // Cyan box
+          ctx.font = 'bold 9px "Space Mono"';
+          const txt = price.toFixed(1);
+          const tw  = ctx.measureText(txt).width;
+          ctx.fillStyle = '#00c9ff';
+          ctx.fillRect(sl, py - 9, sw, 18);
+          ctx.fillStyle = '#000';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(txt, sl + sw / 2, py);
+        }
+      }
+    }
+
     ctx.restore();
   }
 };
 
-// ── Static last-price label plugin (left side) ───────
-const lastPricePlugin = {
-  id: 'lastPrice',
-  afterDraw(chart) {
-    if (!emaAllCandles.length) return;
-    const lastC = emaAllCandles[emaAllCandles.length - 1 - emaViewOffset];
-    if (!lastC) return;
-    const price = lastC[4]; // close
-    const yScale = chart.scales.y;
-    if (!yScale) return;
-    const y = yScale.getPixelForValue(price);
-    const { left, right, top, bottom } = chart.chartArea;
-    if (y < top || y > bottom) return;
-    const ctx = chart.ctx;
-    ctx.save();
-    // Dashed line
-    ctx.beginPath(); ctx.setLineDash([4,3]); ctx.lineWidth=1;
-    ctx.strokeStyle='rgba(0,201,255,.5)';
-    ctx.moveTo(left, y); ctx.lineTo(right, y); ctx.stroke();
-    // Label on left
-    const txt = price.toFixed(1);
-    const tw  = ctx.measureText(txt).width;
-    ctx.fillStyle='#0a1628';
-    ctx.fillRect(0, y-10, left-2, 20);
-    ctx.fillStyle='#00c9ff'; ctx.font='bold 9px "Space Mono"';
-    ctx.textAlign='right'; ctx.textBaseline='middle';
-    ctx.fillText(txt, left-4, y);
-    ctx.restore();
-  }
-};
+// ── Crosshair Y label in strip ────────────────────────
+const lastPricePlugin = { id:'lastPrice', afterDraw(chart){} }; // stub
 
 // ── Compute indicator datasets for renderEmaChart ────
 function buildIndicatorDatasets(candles, viewStart, viewEnd) {
@@ -5218,6 +5910,11 @@ function buildIndicatorDatasets(candles, viewStart, viewEnd) {
   let cemaCrossSignalsPE = new Array(candles.length).fill(null);
   let emaOpenFull = null, emaCloseFull = null; // for signal box
 
+  // Sync indicator eye buttons
+  activeIndicators.forEach(ind => {
+    const eyeEl = document.getElementById('indEye_' + ind.id);
+    if (eyeEl) eyeEl.style.opacity = ind.visible ? '1' : '0.3';
+  });
   activeIndicators.forEach(ind => {
     if (!ind.visible) return;
     const p = ind.params;
@@ -5233,12 +5930,12 @@ function buildIndicatorDatasets(candles, viewStart, viewEnd) {
       if (p.src === 'open') { emaOpenFull = full; }
     }
     else if (ind.type === 'sma') {
-      const full = calcSMA(src, p.period || 14);
-      datasets.push({ type:'line', label:ind.id, data:full.slice(viewStart,viewEnd), borderColor:color, borderWidth:1.5, pointRadius:0, tension:0.1, fill:false, order:1 });
+      const smaFull = calcSMA(src, p.period || 14);
+      datasets.push({ type:'line', label:ind.id, data:smaFull.slice(viewStart,viewEnd), borderColor:color, borderWidth:1.5, pointRadius:0, tension:0.1, fill:false, order:1 });
     }
     else if (ind.type === 'vwap') {
-      const full = calcVWAP(candles);
-      datasets.push({ type:'line', label:ind.id, data:full.slice(viewStart,viewEnd), borderColor:color, borderWidth:1.5, pointRadius:0, borderDash:[4,2], tension:0.1, fill:false, order:1 });
+      const vwapFull = calcVWAP(candles);
+      datasets.push({ type:'line', label:ind.id, data:vwapFull.slice(viewStart,viewEnd), borderColor:color, borderWidth:1.5, pointRadius:0, borderDash:[4,2], tension:0.1, fill:false, order:1 });
     }
     else if (ind.type === 'bb') {
       const { mid, upper, lower } = calcBB(closes, p.period||20, p.mult||2);
@@ -5297,6 +5994,7 @@ function buildIndicatorDatasets(candles, viewStart, viewEnd) {
       ceLtpRising, peLtpRising,
       ivSafe: (atmRow?.call_options?.option_greeks?.iv||0) < 25,
       isSideways: livePCR>=0.85 && livePCR<=1.15,
+      atmCeIv: atmRow?.call_options?.option_greeks?.iv || 0,
     };
   }
 
@@ -5406,7 +6104,7 @@ function buildIndicatorDatasets(candles, viewStart, viewEnd) {
   if (vSigCE_hist.some(v=>v!=null)) datasets.push({
     type:'scatter', label:'EMA_CE_hist',
     data: vSigCE_hist.map((v,i)=>v!=null?{x:i, y:viewLows[i]-GAP*0.6}:null).filter(Boolean),
-    backgroundColor:'rgba(0,229,160,.45)', pointStyle:'triangle', radius:6, order:0, xAxisID:'x2',
+    backgroundColor:'rgba(0,229,160,.25)', pointStyle:'triangle', radius:4, order:0, xAxisID:'x2',
     datalabels:{ display:true, color:'rgba(0,229,160,.7)', font:{family:'Space Mono',size:8},
       formatter:()=>'CE', anchor:'end', align:'top', offset:2,
       backgroundColor:'rgba(0,0,0,.5)', borderRadius:3, padding:{top:1,bottom:1,left:3,right:3} },
@@ -5414,7 +6112,7 @@ function buildIndicatorDatasets(candles, viewStart, viewEnd) {
   if (vSigPE_hist.some(v=>v!=null)) datasets.push({
     type:'scatter', label:'EMA_PE_hist',
     data: vSigPE_hist.map((v,i)=>v!=null?{x:i, y:viewHighs[i]+GAP*0.6}:null).filter(Boolean),
-    backgroundColor:'rgba(255,61,107,.45)', pointStyle:'triangle', rotation:180, radius:6, order:0, xAxisID:'x2',
+    backgroundColor:'rgba(255,61,107,.25)', pointStyle:'triangle', rotation:180, radius:4, order:0, xAxisID:'x2',
     datalabels:{ display:true, color:'rgba(255,61,107,.7)', font:{family:'Space Mono',size:8},
       formatter:()=>'PE', anchor:'start', align:'bottom', offset:2,
       backgroundColor:'rgba(0,0,0,.5)', borderRadius:3, padding:{top:1,bottom:1,left:3,right:3} },
@@ -5465,7 +6163,79 @@ function buildIndicatorDatasets(candles, viewStart, viewEnd) {
   }
 
   activeStrategies.forEach(strat => {
-    if (!strat.visible || !strat.signals.length) return;
+    if (!strat.visible) return;
+    
+    // ── CSV Strategy: calculate fresh signals using live OI ──
+    if (strat.id === 'strat_csv') {
+      if (!strat.visible) return;  // skip heavy compute if hidden
+      const liveIVnow  = liveOI ? (liveOI.atmCeIv || 20) : 20;
+      const livePCRnow = liveOI ? liveOI.pcr : 1.0;
+      const _ck = candles.length+'_'+liveIVnow.toFixed(0)+'_'+livePCRnow.toFixed(2);
+      if (!window._csvSigCache || window._csvSigCacheKey !== _ck) {
+        window._csvSigCache    = calcCsvStrategySignals(candles, emaCloseFull, emaOpenFull, liveIVnow, livePCRnow, liveOI);
+        window._csvSigCacheKey = _ck;
+      }
+      const csvSigs = window._csvSigCache;
+      
+      // viewHighs/viewLows for CSV signal positioning
+      const _csvHighs = candles.slice(viewStart, viewEnd).map(c => c[2]);
+      const _csvLows  = candles.slice(viewStart, viewEnd).map(c => c[3]);
+      const _csvRange = (Math.max(..._csvHighs) - Math.min(..._csvLows)) || 50;
+      const GAP2 = Math.max(_csvRange * 0.06, 5);
+      
+      // BUY CE (up triangle, cyan, below candle)
+      const bceData = csvSigs.buyCE.filter(i=>i>=viewStart&&i<viewEnd)
+        .map(i=>({ x:i-viewStart, y:(_csvLows[i-viewStart]||0)-GAP2 }));
+      if (bceData.length) datasets.push({ type:'scatter', label:'CSV_BUY_CE',
+        data:bceData, backgroundColor:'#00c9ff', borderColor:'#fff', borderWidth:1.5,
+        pointStyle:'triangle', radius:14, order:0, xAxisID:'x2',
+        datalabels:{ display:true, color:'#00c9ff', font:{family:'Space Mono',size:9,weight:'bold'},
+          formatter:()=>'▲CE', anchor:'start', align:'bottom', offset:3,
+          backgroundColor:'rgba(0,0,0,.75)', borderRadius:3, padding:{top:2,bottom:2,left:4,right:4} } });
+      
+      // BUY PE (down triangle, orange, above candle)
+      const bpeData = csvSigs.buyPE.filter(i=>i>=viewStart&&i<viewEnd)
+        .map(i=>({ x:i-viewStart, y:(_csvHighs[i-viewStart]||0)+GAP2 }));
+      if (bpeData.length) datasets.push({ type:'scatter', label:'CSV_BUY_PE',
+        data:bpeData, backgroundColor:'#ff9f40', borderColor:'#fff', borderWidth:1.5,
+        pointStyle:'triangle', rotation:180, radius:14, order:0, xAxisID:'x2',
+        datalabels:{ display:true, color:'#ff9f40', font:{family:'Space Mono',size:9,weight:'bold'},
+          formatter:()=>'▼PE', anchor:'end', align:'top', offset:3,
+          backgroundColor:'rgba(0,0,0,.75)', borderRadius:3, padding:{top:2,bottom:2,left:4,right:4} } });
+      
+      // SELL CE (diamond, red, above candle)
+      const scData = csvSigs.sellCE.filter(i=>i>=viewStart&&i<viewEnd)
+        .map(i=>({ x:i-viewStart, y:(_csvHighs[i-viewStart]||0)+GAP2*1.2 }));
+      if (scData.length) datasets.push({ type:'scatter', label:'CSV_SELL_CE',
+        data:scData, backgroundColor:'#ff3d6b', borderColor:'#fff', borderWidth:1.5,
+        pointStyle:'rectRot', radius:11, order:0, xAxisID:'x2',
+        datalabels:{ display:true, color:'#ff3d6b', font:{family:'Space Mono',size:9,weight:'bold'},
+          formatter:()=>'SELL CE', anchor:'end', align:'top', offset:3,
+          backgroundColor:'rgba(0,0,0,.75)', borderRadius:3, padding:{top:2,bottom:2,left:4,right:4} } });
+      
+      // SELL PE (diamond, purple, below candle)
+      const spData = csvSigs.sellPE.filter(i=>i>=viewStart&&i<viewEnd)
+        .map(i=>({ x:i-viewStart, y:(_csvLows[i-viewStart]||0)-GAP2*1.2 }));
+      if (spData.length) datasets.push({ type:'scatter', label:'CSV_SELL_PE',
+        data:spData, backgroundColor:'#7c3aed', borderColor:'#fff', borderWidth:1.5,
+        pointStyle:'rectRot', radius:11, order:0, xAxisID:'x2',
+        datalabels:{ display:true, color:'#a78bfa', font:{family:'Space Mono',size:9,weight:'bold'},
+          formatter:()=>'SELL PE', anchor:'start', align:'bottom', offset:3,
+          backgroundColor:'rgba(0,0,0,.75)', borderRadius:3, padding:{top:2,bottom:2,left:4,right:4} } });
+      
+      // NO TRADE (gray X, small)
+      const ntData = csvSigs.noTrade.filter(i=>i>=viewStart&&i<viewEnd)
+        .map(i=>({ x:i-viewStart, y:(_csvHighs[i-viewStart]||0)+GAP2*0.6 }));
+      if (ntData.length) datasets.push({ type:'scatter', label:'CSV_NO_TRADE',
+        data:ntData, backgroundColor:'rgba(150,150,150,.4)', borderColor:'rgba(150,150,150,.6)',
+        borderWidth:1, pointStyle:'crossRot', radius:6, order:0, xAxisID:'x2',
+        datalabels:{ display:false } });
+      
+      return;
+    }
+    
+    // ── Other strategies (EMA Cross, etc.) ──
+    if (!strat.signals.length) return;
     const longData  = [], shortData = [];
     strat.signals.forEach(sig => {
       const bar = sig.bar;
@@ -5478,6 +6248,20 @@ function buildIndicatorDatasets(candles, viewStart, viewEnd) {
     if (longData.length) datasets.push({ type:'scatter', label: strat.id+'_L', data: longData, backgroundColor: strat.colorLong, borderColor:'rgba(0,0,0,.6)', borderWidth:1, pointStyle:'triangle', radius:11, order:0, xAxisID:'x2' });
     if (shortData.length) datasets.push({ type:'scatter', label: strat.id+'_S', data: shortData, backgroundColor: strat.colorShort, borderColor:'rgba(0,0,0,.6)', borderWidth:1, pointStyle:'triangle', rotation:180, radius:11, order:0, xAxisID:'x2' });
   });
+
+
+  // Add EMA signal datasets with flags for candleDrawPlugin
+  const emaSignalCE = {
+    type:'line', label:'EMA_SIG_CE', data:[...cemaCrossSignalsCE],
+    borderColor:'transparent', pointRadius:0, borderWidth:0, fill:false,
+    _emaCE: true, _hidden: true
+  };
+  const emaSignalPE = {
+    type:'line', label:'EMA_SIG_PE', data:[...cemaCrossSignalsPE],
+    borderColor:'transparent', pointRadius:0, borderWidth:0, fill:false,
+    _emaPE: true, _hidden: true
+  };
+  datasets.push(emaSignalCE, emaSignalPE);
 
   return { datasets, signalsCE: cemaCrossSignalsCE, signalsPE: cemaCrossSignalsPE, emaCloseFull, emaOpenFull };
 }
@@ -5818,6 +6602,123 @@ window._spotHistory  = [];   // last 10 spot prices for momentum
 window._emaFlipLog  = [];   // EMA bias history for choppy detection
 window._emaFlipCount = 0;   // how many times EMA flipped today
 
+// ═══ Cursor Tool Menu ═══
+function toggleCursorMenu() {
+  const m = document.getElementById('cursorMenu');
+  if (m) m.style.display = m.style.display === 'none' ? 'block' : 'none';
+  // Close on outside click
+  setTimeout(() => {
+    document.addEventListener('click', function closeCursor(e) {
+      const wrap = document.getElementById('cursorToolWrap');
+      if (wrap && !wrap.contains(e.target)) {
+        const m2 = document.getElementById('cursorMenu');
+        if (m2) m2.style.display = 'none';
+      }
+      document.removeEventListener('click', closeCursor);
+    });
+  }, 50);
+}
+
+function selectCursorTool(tool, icon, label) {
+  const btn = document.getElementById('cursorToolBtn');
+  if (btn) btn.classList.remove('active');
+  const curIcon = document.getElementById('cursorIcon');
+  const curLabel = document.getElementById('cursorLabel');
+  if (curIcon) curIcon.textContent = icon;
+  if (curLabel) curLabel.textContent = label;
+  document.getElementById('cursorMenu').style.display = 'none';
+  // Update active state
+  document.querySelectorAll('.cursor-menu-item').forEach(el => el.classList.remove('active'));
+  setDrawTool(tool);
+}
+
+let valTooltipEnabled = true;
+function toggleValTooltip() {
+  valTooltipEnabled = !valTooltipEnabled;
+  const t = document.getElementById('tooltipToggle');
+  if (t) {
+    t.style.background = valTooltipEnabled ? 'var(--green)' : 'var(--border2)';
+    t.querySelector('div').style.left = valTooltipEnabled ? '19px' : '3px';
+  }
+}
+
+// ═══ S/R Lines + Max Pain toggle ═══
+let showSRLines = true;
+function toggleSRLines() {
+  showSRLines = !showSRLines;
+  const card = document.getElementById('srLineCard');
+  if (card) card.style.opacity = showSRLines ? '1' : '0.4';
+  renderEmaChart();
+}
+
+// ═══ TP/SL toggle ═══
+let showTPSL = true;
+function toggleTPSL() {
+  showTPSL = !showTPSL;
+  const card = document.getElementById('tpslCard');
+  if (card) card.style.opacity = showTPSL ? '1' : '0.4';
+  renderEmaChart();
+}
+
+// ═══ CSV Strategy Indicator ═══
+// Based on 8-day data strategy:
+// BUY CE:  EMA BULL + PCR>1.0 + IV<22% + CE/PE ratio<0.93 (PE heavy = bottom)
+// BUY PE:  EMA BEAR + PCR<1.0 + IV<22% + CE/PE ratio>1.1 (CE heavy = top)
+// SELL PE: EMA BULL + PCR>1.1 + IV>25% (82% win)
+// SELL CE: EMA BEAR + PCR<0.9 + IV>25% (57% win)
+// EXIT:    RSI>70 (overbought) or RSI<30 (oversold) or ratio reversal
+
+
+// ═══ Compute CSV Strategy Signals from candle data ═══
+// ═══ Compute TP/SL levels from last signal ═══
+function computeTPSL(candles, signals) {
+  const { buyCE, buyPE, sellCE, sellPE, atrArr } = signals;
+  const levels = [];
+  
+  // Find last signal
+  for (let i = candles.length-1; i >= 0; i--) {
+    const atr = atrArr[i] || 10;
+    
+    if (buyCE[i] !== null) {
+      const entry = candles[i][4];
+      levels.push({ type:'BUY CE', entry, bar:i,
+        tp1: entry + atr * 1.5,
+        tp2: entry + atr * 3.0,
+        sl:  entry - atr * 1.0,
+        color: '#00e5a0' });
+      break;
+    }
+    if (buyPE[i] !== null) {
+      const entry = candles[i][4];
+      levels.push({ type:'BUY PE', entry, bar:i,
+        tp1: entry - atr * 1.5,
+        tp2: entry - atr * 3.0,
+        sl:  entry + atr * 1.0,
+        color: '#ff3d6b' });
+      break;
+    }
+    if (sellPE[i] !== null) {
+      const entry = candles[i][4];
+      levels.push({ type:'SELL PE', entry, bar:i,
+        tp1: entry - atr * 1.5,
+        tp2: entry - atr * 2.5,
+        sl:  entry + atr * 0.8,
+        color: '#ff9f40' });
+      break;
+    }
+    if (sellCE[i] !== null) {
+      const entry = candles[i][4];
+      levels.push({ type:'SELL CE', entry, bar:i,
+        tp1: entry + atr * 1.5,
+        tp2: entry + atr * 2.5,
+        sl:  entry - atr * 0.8,
+        color: '#7c3aed' });
+      break;
+    }
+  }
+  return levels;
+}
+
 // CE/PE History for turning point tracking
 window._cePeHistory = [];
 window._lastCePeSignal = '';
@@ -5884,8 +6785,8 @@ function updateCePeRatioPanel() {
   if (ceHeavy) {
     signal = '🔴 CE HEAVY — TOP NEAR';
     signalColor = '#ff3d6b'; signalBg = 'rgba(255,61,107,.12)';
-    detail = `CE ₹${ce.toFixed(1)} >> PE ₹${pe.toFixed(1)} (ratio ${ratio.toFixed(3)}) — CE overpriced. 8-day: spot likely to FALL next 2-5 candles.<br>` +
-             `⚠ EXIT CE positions. Consider PE buy if EMA confirms bear.`;
+    detail = `CE ₹${ce.toFixed(1)} >> PE ₹${pe.toFixed(1)} (ratio ${ratio.toFixed(3)}) — CE overpriced. <b>9-day: BUY PE 89% win! avg +9.3</b><br>` +
+             `⚡ STRONG SIGNAL: ${atm} PE kharido. EXIT CE positions. Stop: 40%.`;
   } else if (peHeavy) {
     signal = '🟢 PE HEAVY — BOTTOM NEAR';
     signalColor = '#00e5a0'; signalBg = 'rgba(0,229,160,.12)';
@@ -6385,10 +7286,10 @@ function buildCSVRow() {
   // RSI
   let rsi14 = '';
   if (emaAllCandles.length > 14) {
-    const closes = emaAllCandles.map(c => c[4]);
-    const rsiArr = calcRSI(closes, 14);
-    const last   = rsiArr[rsiArr.length - 1];
-    if (last != null) rsi14 = last.toFixed(2);
+    const closesRSI = emaAllCandles.map(c => c[4]);
+    const rsiArr = calcRSI(closesRSI, 14);
+    const lastRSI = rsiArr[rsiArr.length - 1];
+    if (lastRSI != null) rsi14 = lastRSI.toFixed(2);
   }
 
   const momentum = (callBuild + putBuild) > (callUnwind + putUnwind) ? 'BUILDING' : 'UNWINDING';
@@ -6644,6 +7545,8 @@ function runBuyerSellerAdvisor() {
 
   let sellerScore = 0;
   const sellerFlags = [];
+  let buyerScore = 0;
+  const buyerFlags = [];
 
   // 8-day data (867 rows)
   if (ce_iv > 35)        { sellerScore += 3; sellerFlags.push(`🔴 IV ${ce_iv.toFixed(0)}%>35 — STRONG SELLER (61% sell win). Short straddle.`); }
@@ -6670,8 +7573,6 @@ function runBuyerSellerAdvisor() {
   else { sellerFlags.push(`✅ DTE=${dte} — theta normal`); }
 
   // ═══ BUYER SCORE (0-5) ═══
-  let buyerScore = 0;
-  const buyerFlags = [];
 
   const ivCheap = ce_iv < ivBuyerSafe;   // < 18% = truly cheap
   const ivRisky = ce_iv >= ivBuyerSafe && ce_iv < ivSellerLimit; // 18-25% = risky
@@ -6706,11 +7607,25 @@ function runBuyerSellerAdvisor() {
 
   const sellerWin = sellerScore >= 3;
 
-  if (sellerWin && dte === 0) {
-    ceVerdict = '🚫 MAT KAR'; ceColor = '#ff3d6b';
-    ceReason  = 'Expiry day — Theta bahut zyada, CE definitely 0 hoga';
-    peVerdict = '🚫 MAT KAR'; peColor = '#ff3d6b';
-    peReason  = 'Expiry day — Seller dominant, buying BAND';
+  // Expiry day special: SELL strategies instead of BUY
+  if (dte === 0) {
+    const emaBias = document.getElementById('sentTrendVal')?.textContent || 'NEUTRAL';
+    if (emaBias.includes('BULLISH') || pcr > 1.1) {
+      ceVerdict = '✅ SELL CE'; ceColor = '#00e5a0';
+      ceReason  = `Expiry bullish — CE theta se kha jayega, shorting safe`;
+      peVerdict = '✅ SELL PE'; peColor = '#00e5a0';
+      peReason  = `Expiry bullish (PCR ${pcr.toFixed(2)}) — PE theta aapka profit!`;
+    } else if (emaBias.includes('BEARISH') || pcr < 0.85) {
+      ceVerdict = '✅ SELL CE'; ceColor = '#00e5a0';
+      ceReason  = `Expiry bearish (PCR ${pcr.toFixed(2)}) — CE theta aapka profit!`;
+      peVerdict = '✅ SELL PE'; peColor = '#00e5a0';
+      peReason  = `Expiry bearish — PE theta se kha jayega, shorting safe`;
+    } else {
+      ceVerdict = '✅ SELL CE'; ceColor = '#00e5a0';
+      ceReason  = `Expiry neutral — Short CE, theta decay aapka profit`;
+      peVerdict = '✅ SELL PE'; peColor = '#00e5a0';
+      peReason  = `Expiry neutral — Short PE, theta decay aapka profit`;
+    }
   } else if (sellerWin) {
     ceVerdict = '⚠️ AVOID';   ceColor = '#ff9f40';
     ceReason  = `IV ${ce_iv.toFixed(0)}% zyada + Theta high — seller ka din`;
@@ -6777,12 +7692,27 @@ function runBuyerSellerAdvisor() {
   const sellCE3  = ce_iv>25 && emaBear2 && pcr<0.9;
 
   if (dte === 0) {
-    finalAdvice = `🔴 <b>EXPIRY DAY — BUYING MAT KARO</b><br>6-din data: 36% CE win, 36% PE win only. Theta ${ce_theta.toFixed(0)}/day. Sirf sellers kamate hain aaj.`;
+    // 9-day: DTE=0 expiry — CE 38%, PE 37% buyers LOSE
+    // SELL PE 13-Apr: only 54-55% (risky when spot trending)
+    // Safe: SELL CE/PE only if IV>30 AND spot stable
+    const emaBiasExpiry = document.getElementById('sentTrendVal')?.textContent || 'NEUTRAL';
+    const spotMoving = Math.abs((window._spotHistory||[]).reduce((a,b)=>b-a,0)) > 50;
+    if (emaBiasExpiry.includes('BULLISH') || pcr > 1.1) {
+      const sellWarn = spotMoving ? ' ⚠ Spot chal raha hai — SELL PE risky (13-Apr FAIL).' : ' Spot stable = ok.';
+      finalAdvice = `🔴 <b>EXPIRY DAY — ${ce_iv>30?'SELL PE (caution)':'NO TRADE'}</b><br>9-din: DTE=0 buyers 38%. ${ce_iv>30?`IV ${ce_iv.toFixed(0)}%>30 + BULL + PCR ${pcr.toFixed(2)} = SELL PE ${atm}. Stop: 50%.${sellWarn}`:'IV ${ce_iv.toFixed(0)}% low — wait.'}`;
+    } else if (emaBiasExpiry.includes('BEARISH') || pcr < 0.85) {
+      finalAdvice = `🔴 <b>EXPIRY DAY — ${ce_iv>30?'SELL CE':'NO TRADE'}</b><br>9-din: DTE=0 buyers 38%. ${ce_iv>30?`IV ${ce_iv.toFixed(0)}%>30 + BEAR + PCR ${pcr.toFixed(2)} = SELL CE ${atm}. Stop: 50%.`:'Weak signal — wait.'}`;
+    } else {
+      finalAdvice = 'EXPIRY DAY -- NEUTRAL: SHORT STRADDLE!|Direction unclear. SELL CE Rs.' + ce_ltp.toFixed(1) + ' + SELL PE Rs.' + pe_ltp.toFixed(1) + ' @ ' + atm + '. Theta se dono taraf profit.';
+    }
   } else if (ce_iv > 35) {
-    if (sellPE2||sellPE3) finalAdvice = `💰 <b>SELL PE</b> — IV ${ce_iv.toFixed(0)}%>35 + EMA BULL + PCR ${pcr.toFixed(2)}>1.1<br>6-din: 74% PE gira. ${atm} PE sell karo. Stop: 50% premium increase pe exit.`;
-    else if (sellCE2||sellCE3) finalAdvice = `💰 <b>SELL CE</b> — IV ${ce_iv.toFixed(0)}%>35 + EMA BEAR<br>6-din: 64% CE gira. ${atm} CE sell karo. Stop: 50% premium increase pe exit.`;
-    else finalAdvice = `🔴 <b>STRONG SELLER — IV ${ce_iv.toFixed(0)}%>35</b><br>6-din: 64% seller wins. Mixed EMA/PCR. Koi trade nahi. Wait karo.`;
-  } else if (sellPE2 || sellPE3) {
+    // 9-day: IV>35 → CE fell 61%, PE fell 67% avg -3.4
+    if (sellPE2||sellPE3) finalAdvice = `💰 <b>SELL PE — 82% WIN</b> — IV ${ce_iv.toFixed(0)}%>35+BULL+PCR ${pcr.toFixed(2)}>1.1<br>9-din: 82% PE fell avg -2.8. ${atm} PE sell. Stop: 50%.`;
+    else if (sellCE2||sellCE3) finalAdvice = `💰 <b>SELL CE — 57% WIN</b> — IV ${ce_iv.toFixed(0)}%>35+BEAR+PCR ${pcr.toFixed(2)}<0.9<br>9-din: 57% CE fell avg -4.5. ${atm} CE sell. Stop: 50%.`;
+    else if (emaBull2&&pcr>1.0) finalAdvice = `💰 <b>SELL PE (IV>35+BULL)</b> — 9-din: 67% PE fell avg -3.4. ${atm} PE (half). Stop: 50%.`;
+    else if (emaBear2) finalAdvice = `💰 <b>SELL CE (IV>35+BEAR)</b> — 9-din: 61% CE fell avg -2.0. ${atm} CE. Stop: 50%.`;
+    else finalAdvice = `🔴 <b>STRONG SELLER IV ${ce_iv.toFixed(0)}%>35</b><br>9-din: CE 61%, PE 67% fell. EMA+PCR confirm hone do.`;
+    } else if (sellPE2 || sellPE3) {
     finalAdvice = `💰 <b>SELL PE</b> — IV ${ce_iv.toFixed(0)}%>25 + EMA BULL + PCR ${pcr.toFixed(2)}>1.1<br>6-din: ${sellPE2?'71%':'70%'} PE gira. ${atm} PE sell karo. Stop: 50% premium increase pe exit.`;
   } else if (sellCE2 || sellCE3) {
     finalAdvice = `💰 <b>SELL CE</b> — IV ${ce_iv.toFixed(0)}%>25 + EMA BEAR${sellCE3?' + PCR '+pcr.toFixed(2)+'<0.9':''}<br>6-din: ${sellCE3?'62%':'61%'} CE gira. ${atm} CE sell karo. Stop: 50% premium increase pe exit.`;
@@ -6796,10 +7726,16 @@ function runBuyerSellerAdvisor() {
     // EMA BULL + PCR>1.1  → 60% CE win (+0.9 avg)  
     // EMA BEAR + PCR<0.9  → AVOID (38-45% only)
     // Choppy (>8 EMA flips) → NO TRADE regardless
-    if (isChoppyDay) {
-      finalAdvice = `↔ <b>CHOPPY DAY — EMA ${flipCount2} baar flip hua</b><br>7-din data: EMA itni baar flip kare toh market direction nahi pakad raha. <b>Koi trade nahi.</b> IV ${ce_iv.toFixed(0)}% bhi risky zone mein hai. Wait karo kal tak.`;
+    if (isChoppyDay && ce_iv > 18) {
+      // 9-day: 8 of 9 days were choppy — market hai aise hi. Relax rule.
+      finalAdvice = `↔ <b>CHOPPY + RISKY — EMA ${flipCount2}x flip + IV ${ce_iv.toFixed(0)}%</b><br>9-din: 8/9 din choppy = normal. IV ${ce_iv.toFixed(0)}% risky zone bhi. CE/PE ratio ${cepeRatio.toFixed(2)} dekho — >1.15 = PE buy (89%!), <0.87 = CE buy.`;
     } else if (emaBull2 && pcr > 1.15) {
-      finalAdvice = `🟡 <b>CE BUY POSSIBLE — IV ${ce_iv.toFixed(0)}% RISKY ZONE</b><br>7-din: EMA BULL + PCR ${pcr.toFixed(2)}>1.15 = 61% CE win (avg +1.2). <b>Chhoti position ok.</b> ATM ${atm} CE @ ₹${ce_ltp.toFixed(2)}. Stop: 40% loss.`;
+      // 9-day KEY: CE/PE < 1.05 = 84% win | CE/PE >= 1.05 = ONLY 24% win!
+      if (cepeRatio >= 1.05) {
+        finalAdvice = `🔴 <b>CE BUY AVOID — CE/PE=${cepeRatio.toFixed(2)} ≥ 1.05</b><br>9-din: CE heavy! Sirf 24% CE win. ${ceHeavy2?'CE/PE>1.15 → BUY PE 89% win!':'Wait CE/PE<1.05.'}`;
+      } else {
+        finalAdvice = `✅ <b>CE BUY 84% WIN — IV ${ce_iv.toFixed(0)}%+BULL+PCR ${pcr.toFixed(2)}>1.15+CE/PE ${cepeRatio.toFixed(2)}<1.05</b><br>9-din: CE/PE filter se 84% win avg +6.25! ${atm} CE. Stop: 40%.`;
+      }
     } else if (emaBull2 && pcr > 1.1) {
       finalAdvice = `🟡 <b>CE POSSIBLE lekin risky — IV ${ce_iv.toFixed(0)}%</b><br>7-din: EMA BULL + PCR ${pcr.toFixed(2)}>1.1 = 60% win. Risky zone hai. <b>Half position only.</b> Tight stop: 35% loss.`;
     } else if (emaBear2 && pcr < 0.85) {
@@ -6920,6 +7856,19 @@ function onChainLoaded() {
   runAlerts();
   renderHeatmap();
 
+  // Update S/R levels for chart
+  if (chainData && chainData.length) {
+    const spot2 = chainData[0]?.underlying_spot_price || 0;
+    let maxCOI=0, maxPOI=0, res=0, sup=0;
+    chainData.forEach(d => {
+      const coi=d.call_options?.market_data?.oi||0, poi=d.put_options?.market_data?.oi||0;
+      if (Math.abs(d.strike_price-spot2)<=2000) {
+        if(coi>maxCOI){maxCOI=coi;res=d.strike_price;}
+        if(poi>maxPOI){maxPOI=poi;sup=d.strike_price;}
+      }
+    });
+    window._srLevels = { spot:spot2, resistance:res, support:sup, maxPain:calcMaxPain(chainData,spot2) };
+  }
   if (oiAutoSave) { saveOISnapshot(); saveCSVRow(); }
   populateCandleStrikes();
   buildStrategy(activeStrategy);
@@ -7123,9 +8072,12 @@ function renderEmaChart() {
   const candles = emaAllCandles;
   if (!candles.length) return;
   const total    = candles.length;
-  const viewEnd  = Math.max(EMA_VIEW_BARS, total - emaViewOffset);
-  const viewStart= Math.max(0, viewEnd - EMA_VIEW_BARS);
+  // When total < EMA_VIEW_BARS, auto-fit to show all candles
+  const effectiveBars = Math.min(EMA_VIEW_BARS, total);
+  const viewEnd  = Math.min(total, total - emaViewOffset);
+  const viewStart= Math.max(0, viewEnd - effectiveBars);
   const view     = candles.slice(viewStart, viewEnd);
+  const viewLen  = view.length;
   const labels   = view.map(c => fmtCandleLabel(c[0], currentTf));
   const { datasets, signalsCE, signalsPE, emaCloseFull, emaOpenFull } = buildIndicatorDatasets(candles, viewStart, viewEnd);
 
@@ -7162,56 +8114,112 @@ function renderEmaChart() {
   }
   if (signalBox) signalBox.innerHTML = lastSigText + 'EMA: ' + emaBiasNow + oiBiasHtml;
 
+  // Update chart legend
+  const stratState = window._stratState || { ema: true, csv: false };
+  const legendBuyCE = document.getElementById('legendBuyCE');
+  const legendBuyPE = document.getElementById('legendBuyPE');
+  const legendSellCE = document.getElementById('legendSellCE');
+  const legendSellPE = document.getElementById('legendSellPE');
+  if (legendBuyCE) legendBuyCE.style.display = stratState.ema ? 'inline' : 'none';
+  if (legendBuyPE) legendBuyPE.style.display = stratState.ema ? 'inline' : 'none';
+  if (legendSellCE) legendSellCE.style.display = stratState.csv ? 'inline' : 'none';
+  if (legendSellPE) legendSellPE.style.display = stratState.csv ? 'inline' : 'none';
+
+  // Generate CSV sell signals
+  window._csvSellSignals = [];
+  if (stratState.csv && chainData && chainData.length) {
+    const spot = chainData[0]?.underlying_spot_price || 0;
+    const step = INSTRUMENTS[document.getElementById('symbolSel')?.value]?.step || 50;
+    const atm = Math.round(spot / step) * step;
+    const atmRow = chainData.find(d => d.strike_price === atm);
+    const ce_iv = atmRow?.call_options?.option_greeks?.iv || 0;
+    const dte = getDaysToExpiry(document.getElementById('expirySel')?.value || '');
+    const emaBias = document.getElementById('sentTrendVal')?.textContent || 'NEUTRAL';
+    const livePcr = window._livePCR || 1;
+    
+    if (ce_iv > 25 || dte === 0) {
+      if (emaBias.includes('BULLISH') || livePcr > 1.1) {
+        window._csvSellSignals.push({ type: 'SELL_PE', idx: candles.length - 1 });
+      }
+      if (emaBias.includes('BEARISH') || livePcr < 0.85) {
+        window._csvSellSignals.push({ type: 'SELL_CE', idx: candles.length - 1 });
+      }
+    }
+  }
+
   window._candleView = view;
+  window._emaViewOffset = viewStart;
   const canvas = document.getElementById('candleCanvas');
   if (!canvas) return;
 
   if (candleChart) { candleChart.destroy(); candleChart = null; }
-  if (window.ChartDataLabels) Chart.register(ChartDataLabels);
-  Chart.register(candleDrawPlugin);
+  // Re-register EMA-specific plugins
+  try { if (window.ChartDataLabels) Chart.register(ChartDataLabels); } catch(e) {}
+  try { Chart.register(candleDrawPlugin); } catch(e) {}
+  try { Chart.register(tradingViewCrosshairPlugin); } catch(e) {}
+  try { Chart.register(yAxisLabelsPlugin); } catch(e) {}
 
   candleChart = new Chart(canvas.getContext('2d'), {
     data: { labels, datasets },
     options: {
       responsive: true, maintainAspectRatio: false, animation: false,
-      layout: { padding: { top: 20 } },
+      layout: { padding: { top: 2, right: 58, bottom: 2, left: 0 } },
       interaction: { mode:'index', intersect:false },
       plugins: {
         datalabels: { display: false },
-        legend: { display: false },
-        zoom: {
-          pan:  { 
-            enabled: true, mode: 'x',
-            onPan({ chart }) {
-              // Sync zoom-pan with our emaViewOffset
-              const total = emaAllCandles.length;
-              const visMin = chart.scales.x.min;
-              const visMax = chart.scales.x.max;
-              const visLen = visMax - visMin;
-              // Convert pan position to offset
-              const newOffset = Math.max(0, total - Math.round(visMax) - 1);
-              emaViewOffset = Math.min(Math.max(0, newOffset), total - EMA_VIEW_BARS);
-            }
-          },
-          zoom: { 
-            wheel:{ enabled:true, speed:0.05 },
-            pinch:{ enabled:true },
-            mode:'x',
-            onZoom({ chart }) {
-              // Update EMA_VIEW_BARS based on zoom level
-              const visLen = Math.round(chart.scales.x.max - chart.scales.x.min);
-              if (visLen > 10 && visLen < 500) {
-                EMA_VIEW_BARS = visLen;
+        legend:     { display: false },
+        annotation: {
+          annotations: (() => {
+            const ann = {};
+            if (!chainData || !chainData.length) return ann;
+            const liveSpot3 = chainData[0]?.underlying_spot_price || 0;
+            const maxPain3  = calcMaxPain(chainData, liveSpot3);
+            const instrKey3 = document.getElementById('symbolSel')?.value || '';
+            const step3     = INSTRUMENTS[instrKey3]?.step || 50;
+            let mCOI=0, mPOI=0, res3=0, sup3=0;
+            chainData.forEach(d => {
+              if (Math.abs(d.strike_price - liveSpot3) > 2000) return;
+              const coiItem = d.call_options?.market_data?.oi || 0;
+              const poi     = d.put_options?.market_data?.oi  || 0;
+              if (coiItem > mCOI) { mCOI = coiItem; res3 = d.strike_price; }
+              if (poi    > mPOI)  { mPOI = poi;      sup3 = d.strike_price; }
+            });
+            // Lines only - labels drawn by yAxisLabelsPlugin in Y strip
+            if (res3)      ann.ema_res  = { type:'line', scaleID:'y', value:res3,      borderColor:'rgba(255,61,107,.6)',  borderWidth:1, borderDash:[5,3], label:{display:false} };
+            if (sup3)      ann.ema_sup  = { type:'line', scaleID:'y', value:sup3,      borderColor:'rgba(0,229,160,.6)',   borderWidth:1, borderDash:[5,3], label:{display:false} };
+            if (maxPain3)  ann.ema_mp   = { type:'line', scaleID:'y', value:maxPain3,  borderColor:'rgba(255,208,0,.65)',  borderWidth:1, borderDash:[4,3], label:{display:false} };
+            if (liveSpot3) ann.ema_spot = { type:'line', scaleID:'y', value:liveSpot3, borderColor:'rgba(0,201,255,.45)', borderWidth:1, borderDash:[],    label:{display:false} };
+            const atmRow4    = chainData.find(d => d.strike_price === Math.round(liveSpot3/step3)*step3);
+            const atmCeLtp4  = atmRow4?.call_options?.market_data?.ltp || 0;
+            if (atmCeLtp4 > 0 && liveSpot3 > 5000) {
+              const sl4   = liveSpot3 - atmCeLtp4;
+              const tp1_4 = liveSpot3 + atmCeLtp4 * 1.5;
+              const tp2_4 = liveSpot3 + atmCeLtp4 * 3.0;
+              if (Math.abs(tp1_4 - liveSpot3) > liveSpot3 * 0.002) {
+                ann.ema_sl  = { type:'line', scaleID:'y', value:sl4,   borderColor:'rgba(255,30,60,.4)',   borderWidth:1, borderDash:[3,5], label:{display:false} };
+                ann.ema_tp1 = { type:'line', scaleID:'y', value:tp1_4, borderColor:'rgba(0,229,160,.4)',   borderWidth:1, borderDash:[3,5], label:{display:false} };
+                ann.ema_tp2 = { type:'line', scaleID:'y', value:tp2_4, borderColor:'rgba(0,255,136,.45)', borderWidth:1, borderDash:[4,4], label:{display:false} };
               }
             }
-          },
+            return ann;
+          })(),
         },
-        crosshair: {},
+        zoom: { pan:{enabled:false}, zoom:{wheel:{enabled:false},pinch:{enabled:false}} },
       },
       scales: {
-        x:  { display:true, ticks:{ color:'var(--muted)', font:{family:'Space Mono',size:9}, maxTicksLimit:8 }, grid:{ color:'rgba(255,255,255,.04)' } },
+        x: {
+          display: true,
+          offset: true,  // Ensures last candle is NOT at edge (half-bar padding)
+          ticks: { color:'rgba(255,255,255,.55)', font:{family:'Space Mono',size:9}, maxTicksLimit:6, maxRotation:0, autoSkip:true },
+          grid:  { color:'rgba(255,255,255,.04)' }
+        },
         x2: { display:false, type:'linear', min:0, max:view.length-1 },
-        y:  { display:true, position:'right', ticks:{ color:'var(--muted)', font:{family:'Space Mono',size:9} }, grid:{ color:'rgba(255,255,255,.04)' } },
+        y: {
+          display:  false,     // completely hidden — yAxisLabelsPlugin draws everything
+          position: 'right',
+          min: (() => { const lows=view.map(c=>c[3]); const highs=view.map(c=>c[2]); const mn=Math.min(...lows); const range=Math.max(...highs)-mn; return mn - range*0.08; })(),
+          max: (() => { const lows=view.map(c=>c[3]); const highs=view.map(c=>c[2]); const mx=Math.max(...highs); const range=mx-Math.min(...lows); return mx + range*0.08; })(),
+        },
       },
       onHover: (e, els, chart) => {
         const x = e.native?.offsetX, y = e.native?.offsetY;
@@ -7237,8 +8245,49 @@ function renderEmaChart() {
   const btWarn = document.getElementById('btApiWarn');
   if (btWarn) btWarn.textContent = '';
 
-  // Init drawing canvas
-  setTimeout(() => { initDrawingCanvas(); redrawDrawings(); }, 100);
+  // Keyboard arrow key pan
+  const chartWrap = document.getElementById('emaChartWrap');
+  const panHint = document.getElementById('chartPanHint');
+  if (chartWrap) {
+    chartWrap.setAttribute('tabindex', '0');
+    chartWrap.style.outline = 'none';
+    chartWrap.onkeydown = (e) => {
+      if (!emaAllCandles.length) return;
+      const t = emaAllCandles.length;
+      const eb = Math.min(EMA_VIEW_BARS, t);
+      const maxOff = Math.max(0, t - eb);
+      const kbStep = Math.max(1, Math.round(eb * 0.1));
+      if (e.key === 'ArrowLeft') {
+        emaViewOffset = Math.min(maxOff, emaViewOffset + kbStep);
+        renderEmaChart();
+      } else if (e.key === 'ArrowRight') {
+        emaViewOffset = Math.max(0, emaViewOffset - kbStep);
+        renderEmaChart();
+      } else if (e.key === 'Home') {
+        emaViewOffset = 0;
+        renderEmaChart();
+      } else if (e.key === 'End') {
+        emaViewOffset = maxOff;
+        renderEmaChart();
+      }
+    };
+    chartWrap.onfocus = () => { if (panHint) panHint.style.display = 'block'; };
+    chartWrap.onblur = () => { if (panHint) panHint.style.display = 'none'; };
+  }
+  // Show pan hint if data can be panned
+  if (panHint) {
+    const tHint = emaAllCandles.length;
+    const ebHint = Math.min(EMA_VIEW_BARS, tHint);
+    const maxOffHint = Math.max(0, tHint - ebHint);
+    panHint.style.display = maxOffHint > 0 ? 'block' : 'none';
+  }
+
+  // Init drawing canvas + mobile touch
+  setTimeout(() => { initDrawingCanvas(); redrawDrawings(); initMobileTouch(); initMouseDrag(); initWheelZoom(); }, 100);
+  
+  // Set cursor based on current mode
+  const cursorCanvas = document.getElementById('candleCanvas');
+  if (cursorCanvas) cursorCanvas.style.cursor = window._chartCursorMode === 'drag' ? 'grab' : 'crosshair';
 
   // Start live tick
   if (liveTickTimer) clearInterval(liveTickTimer);
@@ -7275,7 +8324,11 @@ function setDrawTool(tool) {
   const tip = document.getElementById('drawTooltip');
   if (tip) tip.textContent = tips[tool] || '';
   
-  if (tool === 'cross') {
+  if (window._chartCursorMode === 'drag') {
+    // In drag mode, disable all drawing
+    canvas.classList.remove('draw-active','draw-eraser','draw-arrow');
+    canvas.style.pointerEvents = 'none';
+  } else if (tool === 'cross') {
     canvas.classList.remove('draw-active','draw-eraser','draw-arrow');
     canvas.style.pointerEvents = 'none';
   } else if (tool === 'eraser') {
@@ -7301,6 +8354,9 @@ function getBarIndexFromPixel(chart, px) {
   return Math.round(chart.scales.x.getValueForPixel(px));
 }
 
+// Mouse drag pan state
+let _mousePan = { active:false, startX:0, startOffset:0 };
+
 function initDrawingCanvas() {
   const canvas = document.getElementById('drawingCanvas');
   if (!canvas) return;
@@ -7319,6 +8375,54 @@ function initDrawingCanvas() {
   canvas.addEventListener('mouseup',   onDrawEnd);
   canvas.addEventListener('mouseleave',onDrawEnd);
   
+  // Mouse wheel zoom on chart canvas
+  const cc2 = document.getElementById('candleCanvas');
+  if (cc2 && !cc2._wheelBound) {
+    cc2._wheelBound = true;
+    // Forward mouse events to drawing layer for crosshair + pan
+    cc2.addEventListener('mousemove', (e) => {
+      const dc = document.getElementById('drawingCanvas');
+      if (dc && dc.style.pointerEvents === 'none') {
+        // Cross mode: show crosshair + handle pan
+        const rect = cc2.getBoundingClientRect();
+        const fakeE = { offsetX: e.clientX - rect.left, offsetY: e.clientY - rect.top };
+        redrawDrawings(fakeE.offsetX, fakeE.offsetY);
+        if (_mousePan.active) {
+          const dx = fakeE.offsetX - _mousePan.startX;
+          const pxPerBar = (cc2.offsetWidth * 0.85) / EMA_VIEW_BARS;
+          const maxOff = Math.max(0, emaAllCandles.length - EMA_VIEW_BARS);
+          emaViewOffset = Math.max(0, Math.min(maxOff, _mousePan.startOffset - dx / pxPerBar));
+          if (!window._rafChart) {
+            window._rafChart = true;
+            requestAnimationFrame(() => { window._rafChart=false; renderEmaChart(); });
+          }
+        }
+      }
+    });
+    cc2.addEventListener('mousedown', (e) => {
+      const rect = cc2.getBoundingClientRect();
+      _mousePan.active = true;
+      _mousePan.startX = e.clientX - rect.left;
+      _mousePan.startOffset = emaViewOffset;
+    });
+    cc2.addEventListener('mouseup',    () => { _mousePan.active = false; });
+    cc2.addEventListener('mouseleave', () => { _mousePan.active = false; redrawDrawings(); });
+    cc2.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      if (!emaAllCandles.length) return;
+      const zoomIn  = e.deltaY < 0;
+      const factor  = zoomIn ? 0.85 : 1.18;
+      const newBars = Math.round(EMA_VIEW_BARS * factor);
+      EMA_VIEW_BARS = Math.max(15, Math.min(500, newBars));
+      const maxOff  = Math.max(0, emaAllCandles.length - EMA_VIEW_BARS);
+      emaViewOffset = Math.min(emaViewOffset, maxOff);
+      if (!window._rafChart) {
+        window._rafChart = true;
+        requestAnimationFrame(() => { window._rafChart=false; renderEmaChart(); });
+      }
+    }, { passive: false });
+  }
+  
   // Touch support
   canvas.addEventListener('touchstart', e => { e.preventDefault(); const t=e.touches[0]; onDrawStart({offsetX:t.clientX-canvas.getBoundingClientRect().left, offsetY:t.clientY-canvas.getBoundingClientRect().top}); }, {passive:false});
   canvas.addEventListener('touchmove',  e => { e.preventDefault(); const t=e.touches[0]; onDrawMove({offsetX:t.clientX-canvas.getBoundingClientRect().left, offsetY:t.clientY-canvas.getBoundingClientRect().top}); }, {passive:false});
@@ -7328,6 +8432,13 @@ function initDrawingCanvas() {
 function onDrawStart(e) {
   if (!candleChart) return;
   const px = e.offsetX, py = e.offsetY;
+  // Cross tool = pan by drag
+  if (activeDrawTool === 'cross') {
+    _mousePan.active      = true;
+    _mousePan.startX      = px;
+    _mousePan.startOffset = emaViewOffset;
+    return;
+  }
   const price = getPriceFromPixel(candleChart, py);
   const barIdx = getBarIndexFromPixel(candleChart, px);
   
@@ -7398,6 +8509,7 @@ function onDrawMove(e) {
 }
 
 function onDrawEnd(e) {
+  _mousePan.active = false;
   if (isDrawing && drawingInProgress) {
     if (drawingInProgress.points.length >= 2 && 
         (drawingInProgress.px1 !== drawingInProgress.px2 || drawingInProgress.py1 !== drawingInProgress.py2)) {
@@ -7547,6 +8659,37 @@ function clearAllDrawings() {
   redrawDrawings();
 }
 
+let tooltipOnPress = true;
+
+function closeCursorMenu() {
+  const m = document.getElementById('cursorMenu');
+  if (m) m.style.display = 'none';
+}
+function selectCursor(mode, icon, label) {
+  document.querySelectorAll('.cursor-menu-item').forEach(el => el.classList.remove('active'));
+  const el = document.getElementById('cmenu_' + mode);
+  if (el) el.classList.add('active');
+  document.getElementById('cursorIcon').textContent  = icon;
+  document.getElementById('cursorLabel').textContent = label;
+  closeCursorMenu();
+  setDrawTool(mode);
+}
+function toggleTooltipOnPress() {
+  tooltipOnPress = !tooltipOnPress;
+  const tog = document.getElementById('tooltipToggle');
+  if (tog) {
+    tog.style.background = tooltipOnPress ? 'var(--accent)' : 'var(--border2)';
+    const thumb = tog.querySelector('div');
+    if (thumb) { thumb.style.right = tooltipOnPress ? '3px' : 'auto'; thumb.style.left = tooltipOnPress ? 'auto' : '3px'; }
+  }
+}
+// Close menu on outside click
+document.addEventListener('click', e => {
+  if (!e.target.closest('#cursorModeBtn') && !e.target.closest('#cursorMenu')) {
+    closeCursorMenu();
+  }
+});
+
 /* ══ RESTORED MISSING FUNCTIONS ══════════════════════ */
 
 function logNotif(msg) {
@@ -7668,15 +8811,204 @@ function scrollEmaChart(dir) {
   const maxOffset = Math.max(0, emaAllCandles.length - EMA_VIEW_BARS);
   const step = Math.max(1, Math.round(EMA_VIEW_BARS * Math.abs(dir)));
   if (dir < 0) {
-    // Scroll LEFT (older candles) — increase offset
+    // ◀ LEFT button = show OLDER candles (scroll back in time)
     emaViewOffset = Math.min(maxOffset, emaViewOffset + step);
   } else {
-    // Scroll RIGHT (newer candles) — decrease offset
+    // ▶ RIGHT button = show NEWER candles (scroll forward in time)
     emaViewOffset = Math.max(0, emaViewOffset - step);
   }
-  // Reset zoom plugin state so our manual scroll takes effect
-  if (candleChart) {
-    try { candleChart.resetZoom(); } catch(e) {}
+  if (candleChart) { try { candleChart.resetZoom(); } catch(e) {} }
+  renderEmaChart();
+}
+
+/* ══ WHEEL ZOOM ════════════════════════════════════ */
+let _wheelZoomInit = false;
+function initWheelZoom() {
+  if (_wheelZoomInit) return;
+  _wheelZoomInit = true;
+  const wrap = document.getElementById('emaChartWrap');
+  if (!wrap) return;
+  wrap.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    if (!emaAllCandles.length) return;
+    const total  = emaAllCandles.length;
+    const delta  = e.deltaY > 0 ? 1.12 : 0.89;  // scroll down = zoom out, up = zoom in
+    let newBars  = Math.round(EMA_VIEW_BARS * delta);
+    newBars      = Math.max(10, Math.min(total, newBars));
+    EMA_VIEW_BARS = newBars;
+    // Keep offset valid
+    const maxOff = Math.max(0, total - EMA_VIEW_BARS);
+    emaViewOffset = Math.min(emaViewOffset, maxOff);
+    renderEmaChart();
+  }, { passive: false });
+}
+
+/* ══ MOUSE DRAG HANDLER ═══════════════════════════ */
+let _mouseDrag = { active:false, lastX:0, lastY:0, startX:0, startY:0, initialized:false };
+
+function initMouseDrag() {
+  if (_mouseDrag.initialized) return;
+  _mouseDrag.initialized = true;
+  
+  const wrap = document.getElementById('emaChartWrap');
+  const canvas = document.getElementById('candleCanvas');
+  if (!wrap) return;
+  
+  wrap.addEventListener('mousedown', (e) => {
+    if (e.button !== 0) return;
+    // In cross mode only drag if Shift held or it's not a drawing tool active
+    if (window._chartCursorMode === 'cross' && activeDrawTool !== 'cross') return;
+    _mouseDrag.active = true;
+    _mouseDrag.lastX = e.clientX;
+    _mouseDrag.lastY = e.clientY;
+    _mouseDrag.startX = e.clientX;
+    _mouseDrag.startY = e.clientY;
+    if (canvas) canvas.style.cursor = 'grabbing';
+    e.preventDefault();
+  });
+  
+  document.addEventListener('mousemove', (e) => {
+    if (!_mouseDrag.active) return;
+    if (!emaAllCandles.length) return;
+    
+    const dx = e.clientX - _mouseDrag.lastX;
+    _mouseDrag.lastX = e.clientX;
+    _mouseDrag.lastY = e.clientY;
+    
+    if (Math.abs(dx) < 1) return;
+
+    const total = emaAllCandles.length;
+    const eb = Math.min(EMA_VIEW_BARS, total);
+    const maxOff = Math.max(0, total - eb);
+    const chartW = canvas ? canvas.offsetWidth : window.innerWidth;
+    const pxPerBar = chartW / eb;
+    
+    // drag right = show older (offset increases), drag left = newer (offset decreases)
+    const barsDelta = -dx / pxPerBar;
+    emaViewOffset = Math.max(0, Math.min(maxOff, emaViewOffset + barsDelta));
+    _cachedSignals = null; // clear signal cache on pan
+    renderEmaChart();
+  });
+  
+  document.addEventListener('mouseup', () => {
+    if (!_mouseDrag.active) return;
+    _mouseDrag.active = false;
+    if (canvas) canvas.style.cursor = window._chartCursorMode === 'drag' ? 'grab' : 'crosshair';
+  });
+}
+
+/* ══ MOBILE TOUCH HANDLER ══════════════════════════ */
+let _touchState = { fingers:0, lastDist:0, lastX:0, startX:0, isDragging:false, _rafPending:false };
+
+function initMobileTouch() {
+  const canvas = document.getElementById('candleCanvas');
+  if (!canvas) return;
+
+  // Store initial Y scale range for vertical zoom
+  let initialYMin = null;
+  let initialYMax = null;
+
+  canvas.addEventListener('touchstart', (e) => {
+    _touchState.fingers = e.touches.length;
+    if (e.touches.length === 1) {
+      // Single finger: start drag
+      _touchState.startX    = e.touches[0].clientX;
+      _touchState.lastX     = e.touches[0].clientX;
+      _touchState.isDragging = true;
+    } else if (e.touches.length === 2) {
+      // Two fingers: start pinch - store initial Y scale
+      _touchState.isDragging = false;
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      _touchState.lastDist = Math.sqrt(dx*dx + dy*dy);
+      _touchState.lastDY = dy;
+      // Store initial Y scale for vertical zoom calculation
+      if (candleChart && candleChart.scales.y) {
+        initialYMin = candleChart.scales.y.min;
+        initialYMax = candleChart.scales.y.max;
+      }
+    }
+  }, { passive: false });
+
+  canvas.addEventListener('touchmove', (e) => {
+    if (!emaAllCandles.length) return;
+
+    if (e.touches.length === 2) {
+      // ── PINCH ZOOM (Horizontal + Vertical) ──
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      const dist = Math.sqrt(dx*dx + dy*dy);
+      const scale = dist / (_touchState.lastDist || dist);
+      _touchState.lastDist = dist;
+
+      if (scale !== 1) {
+        const total = emaAllCandles.length;
+        // Horizontal zoom
+        let newBars = Math.round(EMA_VIEW_BARS / scale);
+        // Don't allow zooming out beyond total candles when total < default
+        const minBars = Math.min(10, total);
+        const maxBars = Math.max(total, 300);
+        EMA_VIEW_BARS = Math.max(minBars, Math.min(maxBars, newBars));
+        // Keep offset valid
+        const effectiveBars = Math.min(EMA_VIEW_BARS, total);
+        const maxOff = Math.max(0, total - effectiveBars);
+        emaViewOffset = Math.min(emaViewOffset, maxOff);
+        
+        // Vertical zoom - adjust Y scale based on pinch
+        if (candleChart && initialYMin !== null && initialYMax !== null) {
+          const midY = (initialYMin + initialYMax) / 2;
+          const rangeY = initialYMax - initialYMin;
+          const newRangeY = rangeY / scale;
+          const yMin = midY - newRangeY / 2;
+          const yMax = midY + newRangeY / 2;
+          candleChart.options.scales.y.min = yMin;
+          candleChart.options.scales.y.max = yMax;
+        }
+        
+        if (candleChart) { try { candleChart.update('none'); } catch(er) {} }
+        if (!_touchState._rafPending) {
+          _touchState._rafPending = true;
+          requestAnimationFrame(() => { _touchState._rafPending=false; renderEmaChart(); });
+        }
+      }
+
+    } else if (e.touches.length === 1 && _touchState.isDragging) {
+      // ── SINGLE FINGER DRAG (pan left/right) ──
+      const currX  = e.touches[0].clientX;
+      const deltaX = currX - _touchState.lastX;
+      _touchState.lastX = currX;
+
+      const canvas2 = document.getElementById('candleCanvas');
+      if (!canvas2) return;
+      const totalDrag = emaAllCandles.length;
+      const effectiveBarsDrag = Math.min(EMA_VIEW_BARS, totalDrag);
+      const pxPerBar = canvas2.offsetWidth / effectiveBarsDrag;
+      const barsDelta = deltaX / pxPerBar;
+      const maxOffDrag = Math.max(0, totalDrag - effectiveBarsDrag);
+
+      // drag RIGHT = show older (offset increases), drag LEFT = newer (offset decreases)
+      emaViewOffset = Math.max(0, Math.min(maxOffDrag, emaViewOffset - barsDelta));
+      if (candleChart) { try { candleChart.resetZoom(); } catch(er) {} }
+      if (!_touchState._rafPending) {
+        _touchState._rafPending = true;
+        requestAnimationFrame(() => { _touchState._rafPending=false; renderEmaChart(); });
+      }
+    }
+  }, { passive: false });
+
+  canvas.addEventListener('touchend', (e) => {
+    _touchState.isDragging = false;
+    _touchState.fingers    = e.touches.length;
+    initialYMin = null;
+    initialYMax = null;
+  }, { passive: false });
+}
+
+function resetChartView() {
+  EMA_VIEW_BARS = 80;
+  emaViewOffset = 0;
+  if (candleChart) { 
+    try { candleChart.resetZoom(); } catch(e) {} 
   }
   renderEmaChart();
 }
@@ -7685,25 +9017,24 @@ function toggleChartFullscreen() {
   const wrap = document.getElementById('emaChartWrap') || document.getElementById('candleCanvas')?.parentElement;
   if (!wrap) return;
   const isFs = wrap.classList.contains('chart-fullscreen');
+  const fsCanvas = document.getElementById('candleCanvas');
   if (isFs) {
     wrap.classList.remove('chart-fullscreen');
-    const canvas = document.getElementById('candleCanvas');
-    if (canvas) canvas.style.height = '360px';
+    if (fsCanvas) fsCanvas.style.height = '360px';
   } else {
     wrap.classList.add('chart-fullscreen');
-    const canvas = document.getElementById('candleCanvas');
-    if (canvas) canvas.style.height = (window.innerHeight - 120) + 'px';
+    if (fsCanvas) fsCanvas.style.height = (window.innerHeight - 120) + 'px';
   }
   setTimeout(() => { if (candleChart) { candleChart.resize(); } renderEmaChart(); }, 100);
 }
 
 function openIndicatorPanel() {
-  const panel = document.getElementById('indicatorPanel');
+  const panel = document.getElementById('indicatorModal') || document.getElementById('indicatorPanel');
   if (panel) panel.style.display = 'block';
 }
 
 function closeIndicatorModal(e) {
-  const panel = document.getElementById('indicatorPanel');
+  const panel = document.getElementById('indicatorModal') || document.getElementById('indicatorPanel');
   if (panel && (e.target === panel || e.currentTarget === panel)) panel.style.display = 'none';
 }
 
@@ -7726,7 +9057,14 @@ function selectStrategy(id) {
 
 function toggleStrategyVisible(id) {
   const strat = activeStrategies.find(s => s.id === id);
-  if (strat) { strat.visible = !strat.visible; renderEmaChart(); }
+  if (!strat) return;
+  strat.visible = !strat.visible;
+  // Update eye button icon
+  const eyeBtn  = document.getElementById('stratEye_' + id);
+  const card    = document.getElementById('stratCard_' + id);
+  if (eyeBtn)  eyeBtn.textContent  = strat.visible ? '👁' : '🚫';
+  if (card) card.style.opacity = strat.visible ? '1' : '0.45';
+  renderEmaChart();
 }
 
 function getRow(strike) {
@@ -7758,6 +9096,7 @@ function runBacktest() {
 }
 
 function switchTab(name) {
+  console.log('switchTab called with:', name);
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
   document.querySelector(`.tab:nth-child(${name==='oauth'?1:2})`).classList.add('active');
@@ -7797,6 +9136,7 @@ async function exchangeCode() {
 }
 
 function loginWithToken() {
+  console.log('loginWithToken called');
   const t = document.getElementById('directToken').value.trim();
   if (!t) return toast('Paste your access token', true);
   initWithToken(t);
@@ -7805,9 +9145,12 @@ function loginWithToken() {
 function initWithToken(token) {
   accessToken = token;
   localStorage.setItem('upstox_token', token);
-  document.getElementById('authScreen').style.display = 'none';
-  document.getElementById('mainApp').style.display    = 'block';
-  document.getElementById('logoutBtn').style.display  = 'flex';
+  const authScreen = document.getElementById('authScreen');
+  const mainApp = document.getElementById('mainApp');
+  const logoutBtn = document.getElementById('logoutBtn');
+  if (authScreen) authScreen.style.display = 'none';
+  if (mainApp) mainApp.style.display = 'block';
+  if (logoutBtn) logoutBtn.style.display = 'flex';
   onSymbolChange();
   setTimeout(() => { if (typeof loadNews === 'function') loadNews(); }, 1000);
 }
@@ -7816,9 +9159,12 @@ function logout() {
   accessToken = '';
   localStorage.removeItem('upstox_token');
   chainData = [];
-  document.getElementById('mainApp').style.display    = 'none';
-  document.getElementById('authScreen').style.display = 'flex';
-  document.getElementById('logoutBtn').style.display  = 'none';
+  const mainApp = document.getElementById('mainApp');
+  const authScreen = document.getElementById('authScreen');
+  const logoutBtn = document.getElementById('logoutBtn');
+  if (mainApp) mainApp.style.display = 'none';
+  if (authScreen) authScreen.style.display = 'flex';
+  if (logoutBtn) logoutBtn.style.display = 'none';
   if (autoTimer) clearInterval(autoTimer);
 }
 
@@ -7893,8 +9239,8 @@ async function fetchChain() {
     onChainLoaded();
     toast('✓ Option chain loaded — ' + chainData.length + ' strikes', false);
   } catch(e) {
-    const instrKey = document.getElementById('symbolSel').value;
-    const isStock  = INSTRUMENTS[instrKey]?.type === 'stock';
+    const instrKeyFetch = document.getElementById('symbolSel').value;
+    const isStock  = INSTRUMENTS[instrKeyFetch]?.type === 'stock';
     const errMsg   = isStock
       ? `⚠ Stock option chain load nahi hua: ${e.message}<br><br>
          <span style="font-size:10px;color:var(--muted)">
@@ -8356,92 +9702,7 @@ function toast(msg, isErr = false) {
   clearTimeout(el._t);
   el._t = setTimeout(() => { el.style.display = 'none'; }, isErr ? 6000 : 3000);
 }
-</script>
 
-<div id="mobileNav" style="
-  display:none;
-  position:fixed; bottom:0; left:0; right:0; z-index:200;
-  background:rgba(7,11,18,.97);
-  border-top:1px solid var(--border2);
-  padding:8px 0 env(safe-area-inset-bottom,8px);
-  backdrop-filter:blur(20px);
-">
-  <div style="display:flex; justify-content:space-around; align-items:center;">
-    <button onclick="mobileScrollTo('chain')" style="background:none;border:none;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 8px;cursor:pointer;font-family:var(--font-mono);font-size:10px;letter-spacing:.5px;">
-      <span style="font-size:18px;">📊</span>CHAIN
-    </button>
-    <button onclick="mobileScrollTo('ai')" style="background:none;border:none;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 8px;cursor:pointer;font-family:var(--font-mono);font-size:10px;letter-spacing:.5px;">
-      <span style="font-size:18px;">🧠</span>AI
-    </button>
-    <button onclick="document.getElementById('refreshBtn').click()" style="background:var(--accent);border:none;color:#000;display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 20px;border-radius:20px;cursor:pointer;font-family:var(--font-mono);font-size:11px;font-weight:700;letter-spacing:1px;">
-      <span style="font-size:16px;">⟳</span>REFRESH
-    </button>
-    <button onclick="mobileScrollTo('unusual')" style="background:none;border:none;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 8px;cursor:pointer;font-family:var(--font-mono);font-size:10px;letter-spacing:.5px;">
-      <span style="font-size:18px;">🔥</span>ALERTS
-    </button>
-    <button onclick="mobileScrollTo('wa')" style="background:none;border:none;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 8px;cursor:pointer;font-family:var(--font-mono);font-size:10px;letter-spacing:.5px;">
-      <span style="font-size:18px;">💬</span>WA
-    </button>
-  </div>
-</div>
-
-<script>
-(function(){
-  function checkMobileNav() {
-    const nav = document.getElementById('mobileNav');
-    if (!nav) return;
-    if (window.innerWidth <= 768) {
-      nav.style.display = 'block';
-      document.querySelector('.app').style.paddingBottom = '72px';
-      // Show scroll hint
-      const hint = document.getElementById('scrollHint');
-      if (hint) hint.style.display = 'block';
-    } else {
-      nav.style.display = 'none';
-      document.querySelector('.app').style.paddingBottom = '0';
-      const hint = document.getElementById('scrollHint');
-      if (hint) hint.style.display = 'none';
-    }
-  }
-  window.addEventListener('resize', checkMobileNav);
-  window.addEventListener('DOMContentLoaded', checkMobileNav);
-  checkMobileNav();
-
-  // Hide scroll hint after first scroll
-  document.addEventListener('scroll', function() {
-    const hint = document.getElementById('scrollHint');
-    if (hint) hint.style.display = 'none';
-  }, { once: true, passive: true });
-
-  // Also handle touch scroll on table
-  document.addEventListener('DOMContentLoaded', function() {
-    const wrap = document.querySelector('.scroll-x');
-    if (wrap) {
-      wrap.addEventListener('touchstart', function() {
-        const hint = document.getElementById('scrollHint');
-        if (hint) hint.style.display = 'none';
-      }, { once: true, passive: true });
-    }
-  });
-
-  window.mobileScrollTo = function(key) {
-    const targets = {
-      chain:   () => document.querySelector('#tableContainer, .section-panel'),
-      ai:      () => document.querySelector('.ai-panel'),
-      unusual: () => document.querySelector('.unusual-panel, #unusualBody'),
-      wa:      () => document.querySelector('.wa-panel, #waBody')
-    };
-    // Find all section panels and match by header text
-    const panels = document.querySelectorAll('.section-panel');
-    const textMap = { chain:'OPTION CHAIN', ai:'AI MARKET', unusual:'UNUSUAL', wa:'WHATSAPP' };
-    let found = null;
-    panels.forEach(p => {
-      if (textMap[key] && p.textContent.toUpperCase().includes(textMap[key])) found = p;
-    });
-    if (!found && targets[key]) found = targets[key]();
-    if (found) found.scrollIntoView({behavior:'smooth', block:'start'});
-  };
-})();
 /* ══════════════════════════════════════════════════════
    MASTER SIGNAL TESTER (Tracks ALL 4 Engines)
 ══════════════════════════════════════════════════════ */
@@ -8567,11 +9828,11 @@ function updateSignalLogs(currentSpot) {
 
     log.currentSpot = currentSpot;
     const move = currentSpot - log.entrySpot;
-    const favorable = log.type === 'BULL' ? move : -move;
-    const adverse   = log.type === 'BULL' ? move : -move;
+    const favorable = log.type === 'BULL' ?  move : -move;
+    const adverse   = log.type === 'BULL' ? -move :  move;  // FIX: adverse = opposite of favorable
 
     if (favorable > log.maxFavorable) log.maxFavorable = favorable;
-    if (adverse   < log.maxAdverse)   log.maxAdverse   = adverse;
+    if (adverse   > log.maxAdverse)   log.maxAdverse   = adverse;  // FIX: max (worst case)
   });
   renderSignalLogs();
 }
@@ -8598,7 +9859,7 @@ function renderSignalLogs() {
     const currMove  = isBull ? (log.currentSpot - log.entrySpot) : (log.entrySpot - log.currentSpot);
     const currColor = currMove > 0 ? '#00e5a0' : currMove < 0 ? '#ff3d6b' : 'var(--muted)';
     const favColor  = log.maxFavorable > 5  ? '#00e5a0' : 'var(--muted)';
-    const advColor  = log.maxAdverse   < -5 ? '#ff3d6b' : 'var(--muted)';
+    const advColor  = log.maxAdverse   > 5  ? '#ff3d6b' : 'var(--muted)';
     const pnlStr    = `${currMove >= 0 ? '+' : ''}${currMove.toFixed(1)}`;
 
     return `<tr style="border-bottom:1px solid var(--border);font-family:var(--font-mono);font-size:10px;">
@@ -8608,7 +9869,7 @@ function renderSignalLogs() {
       <td style="padding:5px 8px;">${log.entrySpot.toFixed(1)}</td>
       <td style="padding:5px 8px;color:${currColor};font-weight:bold;">${log.currentSpot.toFixed(1)} <span style="font-size:11px;">(${pnlStr})</span></td>
       <td style="padding:5px 8px;color:${favColor};">+${log.maxFavorable.toFixed(1)}</td>
-      <td style="padding:5px 8px;color:${advColor};">${log.maxAdverse.toFixed(1)}</td>
+      <td style="padding:5px 8px;color:${advColor};">−${log.maxAdverse.toFixed(1)}</td>
       <td style="padding:5px 8px;color:var(--muted);font-size:11px;max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${log.notes}">${log.notes}</td>
     </tr>`;
   }).join('');
@@ -8624,7 +9885,88 @@ function exportSignalLogs() {
 // [duplicate checkAndLogSignals removed]
 
 // [old updateSignalLogs removed]
+
+/* ══ MOBILE NAV ══════════════════════════════════════ */
+(function(){
+  function checkMobileNav() {
+    const nav = document.getElementById('mobileNav');
+    if (!nav) return;
+    if (window.innerWidth <= 768) {
+      nav.style.display = 'block';
+      document.querySelector('.app').style.paddingBottom = '72px';
+      const hint = document.getElementById('scrollHint');
+      if (hint) hint.style.display = 'block';
+    } else {
+      nav.style.display = 'none';
+      document.querySelector('.app').style.paddingBottom = '0';
+      const hint = document.getElementById('scrollHint');
+      if (hint) hint.style.display = 'none';
+    }
+  }
+  window.addEventListener('resize', checkMobileNav);
+  window.addEventListener('DOMContentLoaded', checkMobileNav);
+  checkMobileNav();
+
+  document.addEventListener('scroll', function() {
+    const hint = document.getElementById('scrollHint');
+    if (hint) hint.style.display = 'none';
+  }, { once: true, passive: true });
+
+  document.addEventListener('DOMContentLoaded', function() {
+    const wrap = document.querySelector('.scroll-x');
+    if (wrap) {
+      wrap.addEventListener('touchstart', function() {
+        const hint = document.getElementById('scrollHint');
+        if (hint) hint.style.display = 'none';
+      }, { once: true, passive: true });
+    }
+  });
+
+  window.mobileScrollTo = function(key) {
+    const targets = {
+      chain:   () => document.querySelector('#tableContainer, .section-panel'),
+      ai:      () => document.querySelector('.ai-panel'),
+      unusual: () => document.querySelector('.unusual-panel, #unusualBody'),
+      wa:      () => document.querySelector('.wa-panel, #waBody')
+    };
+    const panels = document.querySelectorAll('.section-panel');
+    const textMap = { chain:'OPTION CHAIN', ai:'AI MARKET', unusual:'UNUSUAL', wa:'WHATSAPP' };
+    let found = null;
+    panels.forEach(p => {
+      if (textMap[key] && p.textContent.toUpperCase().includes(textMap[key])) found = p;
+    });
+    if (!found && targets[key]) found = targets[key]();
+    if (found) found.scrollIntoView({behavior:'smooth', block:'start'});
+  };
+})();
 </script>
+
+<div id="mobileNav" style="
+  display:none;
+  position:fixed; bottom:0; left:0; right:0; z-index:200;
+  background:rgba(7,11,18,.97);
+  border-top:1px solid var(--border2);
+  padding:8px 0 env(safe-area-inset-bottom,8px);
+  backdrop-filter:blur(20px);
+">
+  <div style="display:flex; justify-content:space-around; align-items:center;">
+    <button onclick="mobileScrollTo('chain')" style="background:none;border:none;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 8px;cursor:pointer;font-family:var(--font-mono);font-size:10px;letter-spacing:.5px;">
+      <span style="font-size:18px;">📊</span>CHAIN
+    </button>
+    <button onclick="mobileScrollTo('ai')" style="background:none;border:none;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 8px;cursor:pointer;font-family:var(--font-mono);font-size:10px;letter-spacing:.5px;">
+      <span style="font-size:18px;">🧠</span>AI
+    </button>
+    <button onclick="fetchChain()" style="background:var(--accent);border:none;color:#000;display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 20px;border-radius:20px;cursor:pointer;font-family:var(--font-mono);font-size:11px;font-weight:700;letter-spacing:1px;">
+      <span style="font-size:16px;">⟳</span>REFRESH
+    </button>
+    <button onclick="mobileScrollTo('unusual')" style="background:none;border:none;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 8px;cursor:pointer;font-family:var(--font-mono);font-size:10px;letter-spacing:.5px;">
+      <span style="font-size:18px;">🔥</span>ALERTS
+    </button>
+    <button onclick="mobileScrollTo('wa')" style="background:none;border:none;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 8px;cursor:pointer;font-family:var(--font-mono);font-size:10px;letter-spacing:.5px;">
+      <span style="font-size:18px;">💬</span>WA
+    </button>
+  </div>
+</div>
 
 </body>
 </html>
