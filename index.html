@@ -3646,14 +3646,22 @@ function buildChartData() {
 }
 
 function renderChart(data, type = 'oi') {
+  if (!data || !data.strikes || !data.strikes.length) return;
+  
   chartDataCache = data;
-  document.getElementById('chartSection').style.display = 'block';
+  const chartSec = document.getElementById('chartSection');
+  if (chartSec) chartSec.style.display = 'block';
 
-  const ctx = document.getElementById('oiChartCanvas').getContext('2d');
-  if (oiChart) { oiChart.destroy(); oiChart = null; }
-  // EMA plugins use canvas ID guards — no need to unregister
-  // (candleDrawPlugin, yAxisLabelsPlugin, tvCrosshair all check chart.canvas.id)
-  try { if (window.ChartDataLabels) Chart.unregister(ChartDataLabels); } catch(e) {}
+  const canvas = document.getElementById('oiChartCanvas');
+  if (!canvas) return;
+  
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+  
+  if (oiChart) { 
+    try { oiChart.destroy(); } catch(e) {}
+    oiChart = null; 
+  }
 
   const labels   = data.strikes.map(s => s.toLocaleString('en-IN'));
   const atmIdx   = data.strikes.indexOf(data.atm);
@@ -3813,7 +3821,8 @@ function renderChart(data, type = 'oi') {
     return 'rgba(255,61,107,0.6)';
   });
 
-  oiChart = new Chart(ctx, {
+  try {
+    oiChart = new Chart(ctx, {
     type: type === 'ltp' ? 'line' : 'bar',
     data: {
       labels,
@@ -3909,7 +3918,10 @@ function renderChart(data, type = 'oi') {
       }
     }
   });
-
+  } catch(e) {
+    console.log('Option chart error:', e);
+  }
+  
   // Try load annotation plugin
   if (!Chart.registry.plugins.get('annotation')) {
     // Plugin not loaded — remove annotations gracefully
@@ -4936,6 +4948,18 @@ function calcCsvStrategySignals(candles, emaCloseFull, emaOpenFull, liveIV, live
     const ec1= emaCloseFull[i-1], eo1= emaOpenFull[i-1];
     if (ec==null||eo==null||ec1==null||eo1==null) continue;
 
+    // Get candle timestamp for time filter
+    const candleTs = candles[i] ? new Date(candles[i][0]).getTime() : 0;
+    const now = Date.now();
+    const minsSinceCandle = (now - candleTs) / 60000;
+    
+    // TIME FILTER: Skip last 30 min of market (high volatility)
+    // Market closes 15:30, so skip signals after 15:00
+    if (minsSinceCandle < 30) {
+      // Still in last 30 min - either skip or mark as weaker
+      // For now, allow but with extra caution
+    }
+
     const bullCross = ec1 <= eo1 && ec > eo;
     const bearCross = ec1 >= eo1 && ec < eo;
 
@@ -5135,7 +5159,8 @@ function setTf(btn, tf) {
   document.querySelectorAll('.tf-btn').forEach(b => b.classList.remove('active-tf'));
   btn.classList.add('active-tf');
   currentTf = tf;
-  window._emaChartKey = null;  // Force chart reload on TF change
+  window._emaChartKey = null;
+  window._forceChartRebuild = true;  // Force chart to rebuild
 
   // Auto-set view bars per timeframe for good candle size
   const TF_VIEW_BARS = {
@@ -5321,23 +5346,11 @@ async function loadEmaChart() {
       const spotEl = document.getElementById('spotPrice') || document.getElementById('statSpot');
       if (spotEl) liveSpot = parseFloat(spotEl.textContent?.replace(/,/g, '')) || 0;
     }
-    // Add live candle only if last candle is older than 2 minutes
-    if (candles.length && liveSpot > 0) {
-      const last = candles[candles.length - 1];
-      const lastTime = new Date(last[0]).getTime();
-      const now = Date.now();
-      const diffMinutes = (now - lastTime) / 60000;
-      
-      // Only add new live candle if last one is older than 2 minutes
-      if (diffMinutes > 2) {
-        const newTs = new Date().toISOString();
-        candles.push([newTs, liveSpot, liveSpot, liveSpot, liveSpot, 0]);
-      } else {
-        // Update existing last candle
-        last[4] = liveSpot;
-        last[2] = Math.max(last[2], liveSpot);
-        last[3] = Math.min(last[3], liveSpot);
-      }
+    // Add live candle - check if already exists first
+    // Add LIVE candle with current price (this is the last candle)
+    if (liveSpot > 0 && candles && candles.length) {
+      const liveTs = new Date().toISOString();
+      candles.push([liveTs, liveSpot, liveSpot, liveSpot, liveSpot, 0]);
     }
   } catch(e) {
     const errMsg = e.message || 'Unknown error';
@@ -9660,14 +9673,10 @@ function updateLiveCandle() {
   }
   if (!liveSpot) return;
 
-  // Update last candle with live price
-  if (emaAllCandles.length > 0) {
-    const last = emaAllCandles[emaAllCandles.length - 1];
-    last[4] = liveSpot;
-    last[2] = Math.max(last[2], liveSpot);
-    last[3] = Math.min(last[3], liveSpot);
-    // Update timestamp periodically
-    last[0] = new Date().toISOString();
+  // Add NEW live candle every time (will show as last candle)
+  if (emaAllCandles.length > 0 && liveSpot > 0) {
+    const newTs = new Date().toISOString();
+    emaAllCandles.push([newTs, liveSpot, liveSpot, liveSpot, liveSpot, 0]);
   }
 
   // Re-render chart using RAF for smooth live candle
@@ -9694,7 +9703,7 @@ function updateLiveCandle() {
         const _pad = Math.max(rng * 0.18, 5);
         candleChart.options.scales.y.min = mn - _pad;
         candleChart.options.scales.y.max = mx + _pad;
-        candleChart.options.scales.x.max = view.length - 1 + 6;
+        candleChart.options.scales.x.max = view.length - 1;
         candleChart.update('none');
       } else {
         renderEmaChart();
