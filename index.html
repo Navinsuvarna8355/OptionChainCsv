@@ -524,11 +524,6 @@ canvas.oi-chart { width: 100% !important; }
   #bsFinalAdvice { font-size: 13px !important; line-height: 1.9 !important; }
   #intelVerdict { font-size: 13px !important; }
   .chart-title { font-size: 14px !important; }
-  /* Bigger canvas on mobile */
-  #candleCanvas { height: calc(100vw * 0.72) !important; min-height: 320px !important; }
-  /* Reduce side padding on mobile to maximize chart width */
-  #emaChartWrap { padding: 0 !important; margin: 0 !important; }
-  .chart-section { padding: 0 !important; }
   .candle-section { margin: 0 !important; border-radius: 0 !important; }
   .candle-select-row { padding: 6px 8px; gap: 4px; }
   #candleCanvas { height: calc(100vw * 0.7) !important; min-height: 260px !important; max-height: 420px !important; }
@@ -2339,7 +2334,7 @@ tr.atm-row td.strike-cell { color:var(--accent); }
     <!-- Main chart canvas -->
     <div id="emaChartWrap" style="position:relative;padding:0;touch-action:none;user-select:none;-webkit-user-select:none;">
       <!-- Canvas fills full width, no padding -->
-      <canvas id="candleCanvas" style="display:block;width:100%;height:calc(min(100vw, 900px) * 0.65);min-height:300px;max-height:580px;touch-action:none;cursor:crosshair;"></canvas>
+      <canvas id="candleCanvas" style="display:block;width:100%;height:calc(min(100vw, 900px) * 0.56);min-height:260px;max-height:480px;touch-action:none;cursor:crosshair;"></canvas>
       <canvas id="drawingCanvas" width="100%" height="360" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;"></canvas>
       <div id="chartPanHint" style="display:none;position:absolute;bottom:10px;left:50%;transform:translateX(-50%);background:rgba(0,201,255,.2);border:1px solid rgba(0,201,255,.5);padding:4px 12px;border-radius:12px;font-family:var(--font-mono);font-size:11px;color:#00c9ff;pointer-events:none;z-index:50;animation:pulse 2s infinite;">← PINCH / DRAG →</div>
     </div>
@@ -5173,8 +5168,6 @@ function setTf(btn, tf) {
   }
 
   window._forceChartRebuild = true;
-  emaAllCandles = [];  // Clear stale candles on TF switch
-  if (candleChart) { candleChart.destroy(); candleChart = null; }  // Force fresh chart
   loadEmaChart();
 }
 
@@ -5187,6 +5180,13 @@ function aggregateCandles(candles1m, nMin) {
     const baseTs = new Date(base[0]);
     const minOfDay = baseTs.getHours() * 60 + baseTs.getMinutes();
     const boundary = Math.floor(minOfDay / nMin) * nMin;
+    
+    // Calculate boundary timestamp (round down to nMin boundary)
+    const boundaryHours = Math.floor(boundary / 60);
+    const boundaryMins = boundary % 60;
+    const boundaryTs = new Date(baseTs);
+    boundaryTs.setHours(boundaryHours, boundaryMins, 0, 0);
+    
     let o = base[1], h = base[2], l = base[3], c = base[4], vol = base[5]||0;
     let j = i + 1;
     while (j < candles1m.length) {
@@ -5196,7 +5196,7 @@ function aggregateCandles(candles1m, nMin) {
       if (Math.floor(nm / nMin) !== Math.floor(boundary / nMin) || nTs.toDateString() !== baseTs.toDateString()) break;
       h = Math.max(h, next[2]); l = Math.min(l, next[3]); c = next[4]; vol += next[5]||0; j++;
     }
-    out.push([base[0], o, h, l, c, vol, base[6]||0]);
+    out.push([boundaryTs.toISOString(), o, h, l, c, vol, base[6]||0]);
     i = j;
   }
   return out;
@@ -5320,8 +5320,7 @@ async function loadEmaChart() {
     candles = needsAgg ? aggregateCandles(raw, aggMin) : raw;
 
     // ── Live candle inject ──────────────────────────────
-    // Upstox intraday last candle ~1-2 min old hota hai
-    // chainData se live spot lekar current minute ka live candle banao
+    // Always try to show current live candle with current spot price
     if (isMinuteTf && candles.length && chainData?.length) {
       const liveSpot = chainData[0]?.underlying_spot_price;
       if (liveSpot > 0) {
@@ -5331,24 +5330,27 @@ async function loadEmaChart() {
         const diffMs   = nowTs - lastTs;
         const candleMs = (tf === '1minute' || needsAgg ? 1 : tf === '5minute' ? 5 : tf === '15minute' ? 15 : 30) * 60 * 1000;
 
-        if (diffMs < candleMs * 2) {
-          // Same candle — update close/high/low
+        // ALWAYS add/update live candle regardless of time gap
+        // This ensures latest candle shows current price
+        if (diffMs < candleMs * 1.5) {
+          // Same candle period — update close/high/low
           candles[candles.length - 1] = [
-            last[0], last[1],
+            last[0], 
+            last[1],
             Math.max(last[2], liveSpot),
             Math.min(last[3], liveSpot),
-            liveSpot, last[5] || 0,
+            liveSpot, 
+            last[5] || 0,
           ];
-        } else if (diffMs < candleMs * 5) {
-          // New candle — add live bar at current time
-          const newTs = new Date(Math.floor(nowTs / candleMs) * candleMs).toISOString();
+        } else {
+          // New candle period started or big gap — create new live candle
+          const newTs = new Date(nowTs).toISOString();
           candles.push([newTs, liveSpot, liveSpot, liveSpot, liveSpot, 0]);
         }
       }
     }
 
   } catch(e) {
-    console.error('EMA Chart load error:', e);
     const errMsg = e.message || 'Unknown error';
     if (signalBox) signalBox.innerHTML = `
       <div style="color:var(--red);font-family:var(--font-mono);font-size:11px;line-height:1.8;">
@@ -7099,25 +7101,20 @@ async function saveOISnapshot() {
   const path=`${symbol}/${month}/${fname}`;
   updateGhStatus(`⏳ Saving ${symbol}...`,'#ff9f40');
   try {
-    const existing = await ghGetFile(path);
-    // Retry up to 3x with fresh SHA each time (prevents 409 conflicts)
-    for (let attempt = 0; attempt < 3; attempt++) {
-      try {
-        const f = attempt > 0 ? await ghGetFile(path) : existing;
-        await ghPutFile(path, JSON.stringify(snap,null,2),
-          `OI ${symbol} ${date} ${snap.time}`, f?.sha || null);
-        updateGhStatus(`✓ ${fname}`, '#00e5a0');
-        break;
-      } catch(e2) {
-        if (e2.message.includes('409') && attempt < 2) {
-          await new Promise(r => setTimeout(r, 400*(attempt+1)));
-          continue;
-        }
-        throw e2;
-      }
+    const existing=await ghGetFile(path);
+    try {
+      await ghPutFile(path,JSON.stringify(snap,null,2),`OI ${symbol} ${date} ${snap.time}`,existing?.sha||null);
+      updateGhStatus(`✓ ${fname}`,'#00e5a0');
+    } catch(e2) {
+      if (e2.message.includes('409')) {
+        // SHA mismatch — re-fetch and retry
+        const refetch = await ghGetFile(path);
+        await ghPutFile(path,JSON.stringify(snap,null,2),`OI ${symbol} ${date} ${snap.time}`,refetch?.sha||null);
+        updateGhStatus(`✓ ${fname} (retry)`,'#00e5a0');
+      } else { throw e2; }
     }
-  } catch(e) { updateGhStatus(`✗ OI: ${e.message}`, '#ff3d6b'); }
-  _ghSaving = false;
+  } catch(e) { updateGhStatus(`✗ ${e.message}`,'#ff3d6b'); }
+  _ghSaving=false;
 }
 function updateGhStatus(msg,color) {
   const el=document.getElementById('ghSaveStatus');
@@ -7395,29 +7392,18 @@ async function saveCSVRow() {
       sha = null;
     }
 
-    // Retry loop for 409 SHA conflicts (up to 3 attempts)
-    let savedOk = false;
-    for (let attempt = 0; attempt < 3; attempt++) {
-      try {
-        // Always fetch latest SHA before each attempt (prevents 409)
-        const latestFile = attempt > 0 ? await ghGetFile(path) : { content: existing?.content, sha: sha };
-        const latestDecoded = latestFile?.content
-          ? new TextDecoder().decode(Uint8Array.from(atob(latestFile.content.replace(/[\s]/g,'')), c=>c.charCodeAt(0)))
-          : null;
-        const latestContent = latestDecoded
-          ? latestDecoded.trimEnd() + '\n' + row
-          : csvContent;
-        await ghPutFile(path, latestContent, `CSV ${symbol} ${date} ${time}`, latestFile?.sha || null);
-        updateGhStatus(`✓ CSV saved ${time}${attempt>0?' (retry '+attempt+')':''}`, '#00e5a0');
-        savedOk = true;
-        break;
-      } catch(e2) {
-        if (e2.message.includes('409') && attempt < 2) {
-          await new Promise(r => setTimeout(r, 300 * (attempt+1))); // backoff
-          continue;
-        }
-        throw e2;
-      }
+    try {
+      await ghPutFile(path, csvContent, `CSV ${symbol} ${date} ${time}`, sha);
+      updateGhStatus(`✓ CSV row saved ${time}`, '#00e5a0');
+    } catch(e2) {
+      if (e2.message.includes('409')) {
+        // SHA mismatch — re-fetch and retry
+        const refetch2 = await ghGetFile(path);
+        const decoded2 = refetch2 ? new TextDecoder().decode(Uint8Array.from(atob(refetch2.content.replace(/[\s]/g,'')), c=>c.charCodeAt(0))) : '';
+        const retryContent = decoded2 ? decoded2.trimEnd() + String.fromCharCode(10) + row : csvContent;
+        await ghPutFile(path, retryContent, `CSV ${symbol} ${date} ${time}`, refetch2?.sha||null);
+        updateGhStatus(`✓ CSV saved ${time} (retry)`, '#00e5a0');
+      } else { throw e2; }
     }
   } catch(e) {
     console.error('CSV Save Error:', e);
@@ -8174,12 +8160,7 @@ function renderEmaChart() {
   const viewStart= Math.max(0, viewEnd - effectiveBars);
   const view     = candles.slice(viewStart, viewEnd);
   const viewLen  = view.length;
-  // Add 3 empty slots on right for breathing room before y-axis
-  const EXTRA_RIGHT = 3;
-  const labelsBase = view.map(c => fmtCandleLabel(c[0], currentTf));
-  const labels     = [...labelsBase, ...Array(EXTRA_RIGHT).fill('')];
-  // window._candleView stays as view (no empty entries), x2 scale needs adjustment
-  window._extraRight = EXTRA_RIGHT;
+  const labels   = view.map(c => fmtCandleLabel(c[0], currentTf));
   const { datasets, signalsCE, signalsPE, emaCloseFull, emaOpenFull } = buildIndicatorDatasets(candles, viewStart, viewEnd);
 
   const signalBox = document.getElementById('emaSignalBox');
@@ -8261,18 +8242,18 @@ function renderEmaChart() {
     try { Chart.register(tradingViewCrosshairPlugin); } catch(e) {}
     // Fast path: just update data and annotations
     window._candleView = view;
-    const _EXTRA = window._extraRight || 3;
-    candleChart.data.labels   = [...labels.slice(0, view.length), ...Array(_EXTRA).fill('')];
+    candleChart.data.labels   = labels;
     candleChart.data.datasets = datasets;
     candleChart.options.plugins.annotation.annotations = buildEmaAnnotations(view);
     // Update y-axis range
     const _lows  = view.map(c=>c[3]); const _highs = view.map(c=>c[2]);
     const _mn    = Math.min(..._lows);  const _mx    = Math.max(..._highs);
     const _range = Math.max(_mx - _mn, 10);
-    candleChart.options.scales.y.min = _mn - _range*0.15;  // 15% padding = ~20px gap
-    candleChart.options.scales.y.max = _mx + _range*0.15;
-    candleChart.options.scales.x2.max = view.length - 1;
-    candleChart.update('none');  // 'none' = no animation = fastest
+    candleChart.options.scales.y.min = _mn - _range*0.18;  // 18% padding = more gap
+    candleChart.options.scales.y.max = _mx + _range*0.18;
+    candleChart.options.scales.x.max = view.length - 1 + 3;  // 3 candles extra space after last
+    candleChart.options.scales.x2.max = view.length - 1 + 3;
+    candleChart.update('none');
     return;
   }
   window._forceChartRebuild = false;
@@ -8286,7 +8267,7 @@ function renderEmaChart() {
     data: { labels, datasets },
     options: {
       responsive: true, maintainAspectRatio: false, animation: false,
-      layout: { padding: { top: 4, right: 72, bottom: 0, left: 0 } },
+      layout: { padding: { top: 2, right: 72, bottom: 2, left: 0 } },
       interaction: { mode:'index', intersect:false },
       plugins: {
         datalabels: { display: false },
@@ -8299,10 +8280,12 @@ function renderEmaChart() {
         x: {
           display: true,
           offset: true,  // Ensures last candle is NOT at edge (half-bar padding)
-          ticks: { color:'rgba(255,255,255,.65)', font:{family:'Space Mono',size:10}, maxTicksLimit:5, maxRotation:0, autoSkip:true },
-          grid:  { color:'rgba(255,255,255,.04)' }
+          ticks: { color:'rgba(255,255,255,.65)', font:{family:'Space Mono',size:10}, maxTicksLimit:6, maxRotation:0, autoSkip:true },
+          grid:  { color:'rgba(255,255,255,.04)' },
+          min: 0,
+          max: view.length - 1 + 3,  // 3 candles extra space after last
         },
-        x2: { display:false, type:'linear', min:0, max:view.length-1+EXTRA_RIGHT },
+        x2: { display:false, type:'linear', min:0, max:view.length - 1 + 3 },
         y: {
           display:  false,     // completely hidden — yAxisLabelsPlugin draws everything
           position: 'right',
@@ -8493,7 +8476,6 @@ function initDrawingCanvas() {
       _mousePan.active = true;
       _mousePan.startX = e.clientX - rect.left;
       _mousePan.startOffset = emaViewOffset;
-      cc2.style.cursor = 'grabbing';
     });
     cc2.addEventListener('mouseup',    () => { _mousePan.active = false; });
     cc2.addEventListener('mouseleave', () => { _mousePan.active = false; redrawDrawings(); });
@@ -9681,15 +9663,22 @@ function updateLiveCandle() {
   if (!emaAllCandles.length) return;
   if (!['1minute','5minute','15minute','30minute'].includes(currentTf)) return;
 
-  // Live spot — chain se ya LTP element se
+  // Live spot — multiple sources try karo
   let liveSpot = 0;
+  
+  // Source 1: chainData se
   if (chainData?.length) {
     liveSpot = chainData[0]?.underlying_spot_price || 0;
   }
+  
+  // Source 2: DOM element se
   if (!liveSpot) {
     const ltpEl = document.getElementById('spotPrice') || document.getElementById('statSpot');
     liveSpot = parseFloat(ltpEl?.textContent?.replace(/,/g,'')) || 0;
   }
+  
+  // Source 3: Try fetching latest LTP from API (skip for now - requires async)
+  
   if (!liveSpot) return;
 
   const tfMs = {
@@ -9704,8 +9693,9 @@ function updateLiveCandle() {
   const lastTs  = new Date(last[0]).getTime();
   const diff    = now - lastTs;
 
+  // ALWAYS update last candle with live price - no time check!
   if (diff < tfMs * 1.5) {
-    // ── Update existing last candle live ──────────────
+    // Same candle period - update close/high/low
     emaAllCandles[emaAllCandles.length - 1] = [
       last[0],
       last[1],                          // open stays
@@ -9714,23 +9704,10 @@ function updateLiveCandle() {
       liveSpot,                         // close = live price
       last[5] || 0,
     ];
-  } else if (diff < tfMs * 4) {
-    // ── New candle started — add live bar ─────────────
-    const newTs = new Date(Math.floor(now / tfMs) * tfMs).toISOString();
-    // Check if already exists
-    const exists = emaAllCandles[emaAllCandles.length - 1][0] === newTs;
-    if (!exists) {
-      emaAllCandles.push([newTs, liveSpot, liveSpot, liveSpot, liveSpot, 0]);
-    } else {
-      // Update the new candle
-      const nc = emaAllCandles[emaAllCandles.length - 1];
-      emaAllCandles[emaAllCandles.length - 1] = [
-        nc[0], nc[1],
-        Math.max(nc[2], liveSpot),
-        Math.min(nc[3], liveSpot),
-        liveSpot, nc[5] || 0,
-      ];
-    }
+  } else {
+    // New candle period - create new live candle with CURRENT time
+    const newTs = new Date(now).toISOString();
+    emaAllCandles.push([newTs, liveSpot, liveSpot, liveSpot, liveSpot, 0]);
   }
 
   // Re-render chart using RAF for smooth live candle
@@ -9747,17 +9724,17 @@ function updateLiveCandle() {
         const view = emaAllCandles.slice(viewStart, viewEnd);
         window._candleView = view;
         // Update labels and datasets
-        const _EXTRA2 = window._extraRight || 3;
-        const labels = [...view.map(c => fmtCandleLabel(c[0], currentTf)), ...Array(_EXTRA2).fill('')];
+        const labels = view.map(c => fmtCandleLabel(c[0], currentTf));
         const { datasets } = buildIndicatorDatasets(emaAllCandles, viewStart, viewEnd);
         candleChart.data.labels   = labels;
         candleChart.data.datasets = datasets;
         // Update y range
         const lows=view.map(c=>c[3]), highs=view.map(c=>c[2]);
         const mn=Math.min(...lows), mx=Math.max(...highs), rng=mx-mn;
-        const _pad = Math.max(rng * 0.15, 5);
-        candleChart.options.scales.y.min = mn - _pad;  // 15% = ~20px gap
+        const _pad = Math.max(rng * 0.18, 5);
+        candleChart.options.scales.y.min = mn - _pad;
         candleChart.options.scales.y.max = mx + _pad;
+        candleChart.options.scales.x.max = view.length - 1 + 3;
         candleChart.update('none');
       } else {
         renderEmaChart();
@@ -9768,8 +9745,8 @@ function updateLiveCandle() {
 
 function startLiveTick() {
   if (liveTickTimer) clearInterval(liveTickTimer);
-  // Update every 3 seconds for smooth live candle
-  liveTickTimer = setInterval(updateLiveCandle, 1500);  // 1.5s for smoother live candle
+  // Update every 1 second for real-time candle updates
+  liveTickTimer = setInterval(updateLiveCandle, 1000);  // 1s for real-time feel
 }
 
 function stopLiveTick() {
