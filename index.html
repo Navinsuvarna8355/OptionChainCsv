@@ -4872,7 +4872,6 @@ let emaAllCandles  = [];
 let emaViewOffset  = 0;
 let EMA_VIEW_BARS = 80;
 let currentTf      = '5minute';
-let _lastTf = '';
 // Signal cache - computed ONCE, not per-render (prevents repaint on scroll)
 let _cachedSignals = null;  // { buyCE, buyPE, sellCE, sellPE, noTrade, crossCE, crossPE }
 let _signalCacheKey = '';   // symbol+tf+length key
@@ -5137,7 +5136,6 @@ function setTf(btn, tf) {
   btn.classList.add('active-tf');
   currentTf = tf;
   window._emaChartKey = null;  // Force chart reload on TF change
-  window._forceChartRebuild = true;  // Force rebuild on TF change
 
   // Auto-set view bars per timeframe for good candle size
   const TF_VIEW_BARS = {
@@ -5316,17 +5314,30 @@ async function loadEmaChart() {
     if (!raw.length) throw new Error('Data nahi mila — token valid hai?');
     candles = needsAgg ? aggregateCandles(raw, aggMin) : raw;
 
-// Inject current price as latest candle (always)
+    // Inject live price as latest candle
     let liveSpot = 0;
     if (chainData?.length) liveSpot = chainData[0]?.underlying_spot_price || 0;
     if (!liveSpot) {
       const spotEl = document.getElementById('spotPrice') || document.getElementById('statSpot');
       if (spotEl) liveSpot = parseFloat(spotEl.textContent?.replace(/,/g, '')) || 0;
     }
-    
+    // Add live candle only if last candle is older than 2 minutes
     if (candles.length && liveSpot > 0) {
-      candles.push([new Date().toISOString(), liveSpot, liveSpot, liveSpot, liveSpot, 0]);
-      console.log('Live candle injected, spot:', liveSpot, 'total:', candles.length);
+      const last = candles[candles.length - 1];
+      const lastTime = new Date(last[0]).getTime();
+      const now = Date.now();
+      const diffMinutes = (now - lastTime) / 60000;
+      
+      // Only add new live candle if last one is older than 2 minutes
+      if (diffMinutes > 2) {
+        const newTs = new Date().toISOString();
+        candles.push([newTs, liveSpot, liveSpot, liveSpot, liveSpot, 0]);
+      } else {
+        // Update existing last candle
+        last[4] = liveSpot;
+        last[2] = Math.max(last[2], liveSpot);
+        last[3] = Math.min(last[3], liveSpot);
+      }
     }
   } catch(e) {
     const errMsg = e.message || 'Unknown error';
@@ -8132,15 +8143,13 @@ function renderEmaChart() {
   const candles = emaAllCandles;
   if (!candles.length) return;
   const total    = candles.length;
-  // Force showing latest candles (reset offset to show newest)
-  emaViewOffset = 0;
+  // When total < EMA_VIEW_BARS, auto-fit to show all candles
   const effectiveBars = Math.min(EMA_VIEW_BARS, total);
-  const viewEnd  = total;
+  const viewEnd  = Math.min(total, total - emaViewOffset);
   const viewStart= Math.max(0, viewEnd - effectiveBars);
   const view     = candles.slice(viewStart, viewEnd);
   const viewLen  = view.length;
   const labels   = view.map(c => fmtCandleLabel(c[0], currentTf));
-  console.log('View length:', viewLen, 'Labels:', labels.length, 'Last label:', labels[labels.length-1]);
   const { datasets, signalsCE, signalsPE, emaCloseFull, emaOpenFull } = buildIndicatorDatasets(candles, viewStart, viewEnd);
 
   const signalBox = document.getElementById('emaSignalBox');
@@ -8214,11 +8223,8 @@ function renderEmaChart() {
   const canvas = document.getElementById('candleCanvas');
   if (!canvas) return;
 
-  // ── Smart render: update existing chart instead of recreate (10x faster) ──
-  // Always rebuild on TF change to ensure proper aggregation
-  const isTfChange = window._lastTf !== currentTf;
-  window._lastTf = currentTf;
-  if (candleChart && !window._forceChartRebuild && !isTfChange) {
+  // Smart render - only update if chart exists
+  if (candleChart && !window._forceChartRebuild) {
     // Re-register EMA plugins (OI chart might have them in wrong state)
     try { Chart.register(candleDrawPlugin); } catch(e) {}
     try { Chart.register(yAxisLabelsPlugin); } catch(e) {}
@@ -8234,8 +8240,6 @@ function renderEmaChart() {
     const _range = Math.max(_mx - _mn, 10);
     candleChart.options.scales.y.min = _mn - _range*0.18;
     candleChart.options.scales.y.max = _mx + _range*0.18;
-    candleChart.options.scales.x.max = view.length + 3;
-    candleChart.options.scales.x2.max = view.length + 3;
     candleChart.update('none');
     return;
   }
@@ -8265,13 +8269,11 @@ function renderEmaChart() {
       scales: {
         x: {
           display: true,
-          offset: false,
+          offset: true,
           ticks: { color:'rgba(255,255,255,.65)', font:{family:'Space Mono',size:10}, maxTicksLimit:6, maxRotation:0, autoSkip:true },
           grid:  { color:'rgba(255,255,255,.04)' },
-          min: 0,
-          max: view.length + 3,  // 4 candles extra space after last
         },
-        x2: { display:false, type:'linear', min:0, max:view.length + 3 },
+        x2: { display:false, type:'linear', min:0, max:view.length-1 },
         y: {
           display:  false,     // completely hidden — yAxisLabelsPlugin draws everything
           position: 'right',
@@ -9658,18 +9660,14 @@ function updateLiveCandle() {
   }
   if (!liveSpot) return;
 
-  // Add/update live candle with current price
-  const newTs = new Date().toISOString();
-if (emaAllCandles.length > 0) {
-    // Update last candle
-    emaAllCandles[emaAllCandles.length - 1] = [
-      newTs,
-      liveSpot,
-      Math.max(emaAllCandles[emaAllCandles.length - 1][2], liveSpot),
-      Math.min(emaAllCandles[emaAllCandles.length - 1][3], liveSpot),
-      liveSpot,
-      0
-    ];
+  // Update last candle with live price
+  if (emaAllCandles.length > 0) {
+    const last = emaAllCandles[emaAllCandles.length - 1];
+    last[4] = liveSpot;
+    last[2] = Math.max(last[2], liveSpot);
+    last[3] = Math.min(last[3], liveSpot);
+    // Update timestamp periodically
+    last[0] = new Date().toISOString();
   }
 
   // Re-render chart using RAF for smooth live candle
@@ -9696,7 +9694,7 @@ if (emaAllCandles.length > 0) {
         const _pad = Math.max(rng * 0.18, 5);
         candleChart.options.scales.y.min = mn - _pad;
         candleChart.options.scales.y.max = mx + _pad;
-        candleChart.options.scales.x.max = view.length - 1 + 4;
+        candleChart.options.scales.x.max = view.length - 1 + 6;
         candleChart.update('none');
       } else {
         renderEmaChart();
