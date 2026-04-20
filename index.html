@@ -517,6 +517,18 @@ canvas.oi-chart { width: 100% !important; }
 /* ═══════════════ MOBILE RESPONSIVE ═══════════════ */
 @media (max-width: 768px) {
   body { overflow-x: hidden; }
+  /* Larger fonts for mobile readability */
+  .signal-row, .stat-item, .panel-row { font-size: 12px !important; }
+  #emaSignalBox { font-size: 12px !important; }
+  #ohlcBar { font-size: 12px !important; }
+  #bsFinalAdvice { font-size: 13px !important; line-height: 1.9 !important; }
+  #intelVerdict { font-size: 13px !important; }
+  .chart-title { font-size: 14px !important; }
+  /* Bigger canvas on mobile */
+  #candleCanvas { height: calc(100vw * 0.72) !important; min-height: 320px !important; }
+  /* Reduce side padding on mobile to maximize chart width */
+  #emaChartWrap { padding: 0 !important; margin: 0 !important; }
+  .chart-section { padding: 0 !important; }
   .candle-section { margin: 0 !important; border-radius: 0 !important; }
   .candle-select-row { padding: 6px 8px; gap: 4px; }
   #candleCanvas { height: calc(100vw * 0.7) !important; min-height: 260px !important; max-height: 420px !important; }
@@ -2254,8 +2266,8 @@ tr.atm-row td.strike-cell { color:var(--accent); }
 
       <!-- TF buttons -->
       <div style="display:flex;gap:2px;" id="tfBtnRow">
-        <button class="tf-btn active-tf" data-tf="1minute"  onclick="setTf(this,'1minute')">1m</button>
-        <button class="tf-btn"           data-tf="5minute"  onclick="setTf(this,'5minute')">5m</button>
+        <button class="tf-btn" data-tf="1minute"  onclick="setTf(this,'1minute')" >1m</button>
+        <button class="tf-btn active-tf" data-tf="5minute"  onclick="setTf(this,'5minute')">5m</button>
         <button class="tf-btn"           data-tf="15minute" onclick="setTf(this,'15minute')">15m</button>
         <button class="tf-btn"           data-tf="30minute" onclick="setTf(this,'30minute')">30m</button>
         <button class="tf-btn"           data-tf="day"      onclick="setTf(this,'day')">1D</button>
@@ -2319,7 +2331,7 @@ tr.atm-row td.strike-cell { color:var(--accent); }
     <div id="activeStratResult" style="display:none;border-bottom:1px solid var(--border);background:rgba(0,0,0,.15);padding:8px 12px;font-family:var(--font-mono);font-size:11px;"></div>
 
     <!-- Signal info bar -->
-    <div id="emaSignalBox" style="padding:3px 12px;font-family:var(--font-mono);font-size:11px;letter-spacing:.3px;background:rgba(0,0,0,.2);border-bottom:1px solid var(--border);min-height:18px;"></div>
+    <div id="emaSignalBox" style="padding:4px 12px;font-family:var(--font-mono);font-size:12px;letter-spacing:.3px;background:rgba(0,0,0,.2);border-bottom:1px solid var(--border);min-height:18px;"></div>
 
     <!-- OHLC tooltip bar -->
     <div id="ohlcBar" style="padding:5px 12px;font-family:var(--font-mono);font-size:12px;font-weight:bold;color:#fff;background:rgba(0,0,0,.5);min-height:20px;display:flex;gap:16px;border-radius:4px;"></div>
@@ -2327,7 +2339,7 @@ tr.atm-row td.strike-cell { color:var(--accent); }
     <!-- Main chart canvas -->
     <div id="emaChartWrap" style="position:relative;padding:0;touch-action:none;user-select:none;-webkit-user-select:none;">
       <!-- Canvas fills full width, no padding -->
-      <canvas id="candleCanvas" style="display:block;width:100%;height:calc(min(100vw, 900px) * 0.56);min-height:260px;max-height:480px;touch-action:none;cursor:crosshair;"></canvas>
+      <canvas id="candleCanvas" style="display:block;width:100%;height:calc(min(100vw, 900px) * 0.65);min-height:300px;max-height:580px;touch-action:none;cursor:crosshair;"></canvas>
       <canvas id="drawingCanvas" width="100%" height="360" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;"></canvas>
       <div id="chartPanHint" style="display:none;position:absolute;bottom:10px;left:50%;transform:translateX(-50%);background:rgba(0,201,255,.2);border:1px solid rgba(0,201,255,.5);padding:4px 12px;border-radius:12px;font-family:var(--font-mono);font-size:11px;color:#00c9ff;pointer-events:none;z-index:50;animation:pulse 2s infinite;">← PINCH / DRAG →</div>
     </div>
@@ -2995,6 +3007,11 @@ function selectSymbol(key, label) {
 
 // Init search box with current value
 document.addEventListener('DOMContentLoaded', function() {
+  // Set default 5m TF button active
+  document.querySelectorAll('.tf-btn').forEach(b => b.classList.remove('active-tf'));
+  const d5m = document.querySelector('[data-tf="5minute"]');
+  if (d5m) d5m.classList.add('active-tf');
+
   try {
     const cur = document.getElementById('symbolSel')?.value || 'NSE_INDEX|Nifty 50';
     const lbl = INSTRUMENTS[cur]?.label || 'NIFTY 50';
@@ -3639,11 +3656,9 @@ function renderChart(data, type = 'oi') {
 
   const ctx = document.getElementById('oiChartCanvas').getContext('2d');
   if (oiChart) { oiChart.destroy(); oiChart = null; }
-  // Unregister EMA-specific plugins for OI chart
+  // EMA plugins use canvas ID guards — no need to unregister
+  // (candleDrawPlugin, yAxisLabelsPlugin, tvCrosshair all check chart.canvas.id)
   try { if (window.ChartDataLabels) Chart.unregister(ChartDataLabels); } catch(e) {}
-  try { Chart.unregister(candleDrawPlugin); } catch(e) {}
-  try { Chart.unregister(tradingViewCrosshairPlugin); } catch(e) {}
-  try { Chart.unregister(yAxisLabelsPlugin); } catch(e) {}
 
   const labels   = data.strikes.map(s => s.toLocaleString('en-IN'));
   const atmIdx   = data.strikes.indexOf(data.atm);
@@ -3663,8 +3678,13 @@ function renderChart(data, type = 'oi') {
   // If all data is zero, show message
   const allZero = [...ds1, ...ds2].every(v => !v || v === 0);
   if (allZero && type !== 'oi') {
-    document.getElementById('signalLegend').innerHTML = 
-      '<span style="color:var(--muted);font-family:var(--font-mono);font-size:10px;">⚠ ' + yLabel + ' data available nahi — API se nahi aaya</span>';
+    // Upstox option chain snapshot mein Volume/LTP kuch cases mein nahi aata
+    // Fallback: show OI data with a note
+    const origLabel = yLabel;
+    ds1 = data.callOI; ds2 = data.putOI; yLabel = 'Open Interest';
+    document.getElementById('signalLegend').innerHTML =
+      '<span style="color:var(--yellow);font-family:var(--font-mono);font-size:10px;">' +
+      '⚠ ' + origLabel + ' data nahi aaya — OI dikh raha hai</span>';
   }
 
   // Build signal annotations — Support/Resistance/MaxPain/TP/SL
@@ -3806,13 +3826,16 @@ function renderChart(data, type = 'oi') {
         {
           label: type === 'ltp' ? 'Call LTP' : 'Call ' + yLabel,
           data: ds1,
-          backgroundColor: type === 'ltp' ? 'rgba(0,229,160,0.1)' : ds1Colors,
-          borderColor: 'rgba(0,229,160,0.9)',
-          borderWidth: type === 'ltp' ? 2 : 0,
-          fill: type === 'ltp',
-          tension: 0.4,
-          pointRadius: type === 'ltp' ? 3 : 0,
+          backgroundColor: type === 'ltp' ? 'rgba(0,229,160,0.12)' : ds1Colors,
+          borderColor: type === 'ltp' ? 'rgba(0,229,160,1.0)' : 'rgba(0,229,160,0.9)',
+          borderWidth: type === 'ltp' ? 2.5 : 0,
+          fill: type === 'ltp' ? 'origin' : false,
+          tension: 0.3,
+          pointRadius: type === 'ltp' ? 4 : 0,
+          pointHoverRadius: type === 'ltp' ? 7 : 0,
           pointBackgroundColor: 'rgba(0,229,160,0.9)',
+          pointBorderColor: '#fff',
+          pointBorderWidth: type === 'ltp' ? 1.5 : 0,
         },
         {
           label: type === 'ltp' ? 'Put LTP' : 'Put ' + yLabel,
@@ -3863,8 +3886,8 @@ function renderChart(data, type = 'oi') {
         x: {
           grid: { color: 'rgba(30,48,80,0.5)' },
           ticks: {
-            color: '#4a6a8a', font: { family: 'Space Mono', size: 9 },
-            maxRotation: 0, minRotation: 0, autoSkip: true, maxTicksLimit: 10,
+            color: '#6a8aaa', font: { family: 'Space Mono', size: 10 },
+            maxRotation: 0, minRotation: 0, autoSkip: true, maxTicksLimit: 8,
             callback: function(val, idx) {
               const s = data.strikes[idx];
               if (s === data.atm) return '📍' + s.toLocaleString('en-IN');
@@ -3877,8 +3900,16 @@ function renderChart(data, type = 'oi') {
           grid: { color: 'rgba(30,48,80,0.4)' },
           ticks: {
             color: '#4a6a8a', font: { family: 'Space Mono', size: 9 },
-            callback: v => v >= 1e7 ? (v/1e7).toFixed(1)+'Cr' : v >= 1e5 ? (v/1e5).toFixed(1)+'L' : v >= 1000 ? (v/1000).toFixed(0)+'K' : v
-          }
+            callback: v => {
+              if (type === 'ltp') return '₹' + v.toFixed(0);
+              return v >= 1e7 ? (v/1e7).toFixed(1)+'Cr' : v >= 1e5 ? (v/1e5).toFixed(1)+'L' : v >= 1000 ? (v/1000).toFixed(0)+'K' : v;
+            }
+          },
+          // LTP: start from meaningful range, not 0
+          ...(type === 'ltp' ? {
+            suggestedMin: Math.max(0, Math.min(...[...ds1,...ds2].filter(v=>v>0)) * 0.8),
+            suggestedMax: Math.max(...[...ds1,...ds2]) * 1.1,
+          } : {})
         }
       }
     }
@@ -4430,7 +4461,7 @@ function runMarketIntelligence() {
       if (score >= 2 && livePCR > 1.15) {
         const cepeNow = (() => { const aR=chainData?.find(d=>d.strike_price===atm); const cl=aR?.call_options?.market_data?.ltp||0; const pl=aR?.put_options?.market_data?.ltp||0; return cl>0&&pl>0?cl/pl:1; })();
         if (cepeNow >= 1.05) return { label:`🔴 CE AVOID CE/PE=${cepeNow.toFixed(2)}`, color:'var(--red)', bg:'rgba(255,61,107,.06)', border:'rgba(255,61,107,.2)',
-          action:`🔴 CE/PE=${cepeNow.toFixed(2)}≥1.05: CE heavy! 9-din sirf 24% CE win. ${cepeNow>1.15?'BUY PE 89% win instead!':'Wait CE/PE<1.05.'}` };
+          action:`🔴 CE/PE=${cepeNow.toFixed(2)}≥1.05: CE heavy! 9-din sirf 24% CE win. ${cepeNow>1.15?'BUY PE 81% win instead!':'Wait CE/PE<1.05.'}` };
         return { label:`✅ CE BUY 84% CE/PE=${cepeNow.toFixed(2)}`, color:'#00e5a0', bg:'rgba(0,229,160,.10)', border:'rgba(0,229,160,.4)',
           action:`✅ CE/PE=${cepeNow.toFixed(2)}<1.05 + PCR ${livePCR.toFixed(2)}>1.15 + BULL = 84% CE win! IV ${atmCEiv.toFixed(0)}% risky. ${fmtN(atm)} CE. Stop: 40%.` };
       }
@@ -4845,7 +4876,7 @@ let candleChart    = null;
 let emaAllCandles  = [];
 let emaViewOffset  = 0;
 let EMA_VIEW_BARS = 80;
-let currentTf      = '1minute';
+let currentTf      = '5minute';
 // Signal cache - computed ONCE, not per-render (prevents repaint on scroll)
 let _cachedSignals = null;  // { buyCE, buyPE, sellCE, sellPE, noTrade, crossCE, crossPE }
 let _signalCacheKey = '';   // symbol+tf+length key
@@ -5141,6 +5172,9 @@ function setTf(btn, tf) {
     }
   }
 
+  window._forceChartRebuild = true;
+  emaAllCandles = [];  // Clear stale candles on TF switch
+  if (candleChart) { candleChart.destroy(); candleChart = null; }  // Force fresh chart
   loadEmaChart();
 }
 
@@ -5331,6 +5365,8 @@ async function loadEmaChart() {
 
   emaAllCandles = candles;
   emaViewOffset = 0;
+  window._forceChartRebuild = true;
+  _annCacheKey2 = '';  // Force annotation rebuild on new data
   _cachedSignals  = null;
   _signalCacheKey = '';
   window._csvSigCache = null; window._csvSigCacheKey = '';
@@ -5819,7 +5855,7 @@ const yAxisLabelsPlugin = {
     ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(sl, top); ctx.lineTo(sl, bottom); ctx.stroke();
 
-    ctx.font = '9px "Space Mono"';
+    ctx.font = '10px "Space Mono"';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
 
@@ -5853,7 +5889,7 @@ const yAxisLabelsPlugin = {
         const py = yScale.getPixelForValue(ann.value);
         if (py < top || py > bottom) return;
         const txt = label(ann.value);
-        ctx.font = '8px "Space Mono"';
+        ctx.font = '9px "Space Mono"';
         const tw = ctx.measureText(txt).width;
         ctx.fillStyle = 'rgba(7,11,18,.9)';
         ctx.fillRect(sl + 1, py - 8, Math.min(tw + 6, sw - 2), 16);
@@ -6785,7 +6821,7 @@ function updateCePeRatioPanel() {
   if (ceHeavy) {
     signal = '🔴 CE HEAVY — TOP NEAR';
     signalColor = '#ff3d6b'; signalBg = 'rgba(255,61,107,.12)';
-    detail = `CE ₹${ce.toFixed(1)} >> PE ₹${pe.toFixed(1)} (ratio ${ratio.toFixed(3)}) — CE overpriced. <b>9-day: BUY PE 89% win! avg +9.3</b><br>` +
+    detail = `CE ₹${ce.toFixed(1)} >> PE ₹${pe.toFixed(1)} (ratio ${ratio.toFixed(3)}) — CE overpriced. <b>9-day: BUY PE 81% win! avg +9.3</b><br>` +
              `⚡ STRONG SIGNAL: ${atm} PE kharido. EXIT CE positions. Stop: 40%.`;
   } else if (peHeavy) {
     signal = '🟢 PE HEAVY — BOTTOM NEAR';
@@ -7063,20 +7099,25 @@ async function saveOISnapshot() {
   const path=`${symbol}/${month}/${fname}`;
   updateGhStatus(`⏳ Saving ${symbol}...`,'#ff9f40');
   try {
-    const existing=await ghGetFile(path);
-    try {
-      await ghPutFile(path,JSON.stringify(snap,null,2),`OI ${symbol} ${date} ${snap.time}`,existing?.sha||null);
-      updateGhStatus(`✓ ${fname}`,'#00e5a0');
-    } catch(e2) {
-      if (e2.message.includes('409')) {
-        // SHA mismatch — re-fetch and retry
-        const refetch = await ghGetFile(path);
-        await ghPutFile(path,JSON.stringify(snap,null,2),`OI ${symbol} ${date} ${snap.time}`,refetch?.sha||null);
-        updateGhStatus(`✓ ${fname} (retry)`,'#00e5a0');
-      } else { throw e2; }
+    const existing = await ghGetFile(path);
+    // Retry up to 3x with fresh SHA each time (prevents 409 conflicts)
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        const f = attempt > 0 ? await ghGetFile(path) : existing;
+        await ghPutFile(path, JSON.stringify(snap,null,2),
+          `OI ${symbol} ${date} ${snap.time}`, f?.sha || null);
+        updateGhStatus(`✓ ${fname}`, '#00e5a0');
+        break;
+      } catch(e2) {
+        if (e2.message.includes('409') && attempt < 2) {
+          await new Promise(r => setTimeout(r, 400*(attempt+1)));
+          continue;
+        }
+        throw e2;
+      }
     }
-  } catch(e) { updateGhStatus(`✗ ${e.message}`,'#ff3d6b'); }
-  _ghSaving=false;
+  } catch(e) { updateGhStatus(`✗ OI: ${e.message}`, '#ff3d6b'); }
+  _ghSaving = false;
 }
 function updateGhStatus(msg,color) {
   const el=document.getElementById('ghSaveStatus');
@@ -7354,18 +7395,29 @@ async function saveCSVRow() {
       sha = null;
     }
 
-    try {
-      await ghPutFile(path, csvContent, `CSV ${symbol} ${date} ${time}`, sha);
-      updateGhStatus(`✓ CSV row saved ${time}`, '#00e5a0');
-    } catch(e2) {
-      if (e2.message.includes('409')) {
-        // SHA mismatch — re-fetch and retry
-        const refetch2 = await ghGetFile(path);
-        const decoded2 = refetch2 ? new TextDecoder().decode(Uint8Array.from(atob(refetch2.content.replace(/[\s]/g,'')), c=>c.charCodeAt(0))) : '';
-        const retryContent = decoded2 ? decoded2.trimEnd() + String.fromCharCode(10) + row : csvContent;
-        await ghPutFile(path, retryContent, `CSV ${symbol} ${date} ${time}`, refetch2?.sha||null);
-        updateGhStatus(`✓ CSV saved ${time} (retry)`, '#00e5a0');
-      } else { throw e2; }
+    // Retry loop for 409 SHA conflicts (up to 3 attempts)
+    let savedOk = false;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        // Always fetch latest SHA before each attempt (prevents 409)
+        const latestFile = attempt > 0 ? await ghGetFile(path) : { content: existing?.content, sha: sha };
+        const latestDecoded = latestFile?.content
+          ? new TextDecoder().decode(Uint8Array.from(atob(latestFile.content.replace(/[\s]/g,'')), c=>c.charCodeAt(0)))
+          : null;
+        const latestContent = latestDecoded
+          ? latestDecoded.trimEnd() + '\n' + row
+          : csvContent;
+        await ghPutFile(path, latestContent, `CSV ${symbol} ${date} ${time}`, latestFile?.sha || null);
+        updateGhStatus(`✓ CSV saved ${time}${attempt>0?' (retry '+attempt+')':''}`, '#00e5a0');
+        savedOk = true;
+        break;
+      } catch(e2) {
+        if (e2.message.includes('409') && attempt < 2) {
+          await new Promise(r => setTimeout(r, 300 * (attempt+1))); // backoff
+          continue;
+        }
+        throw e2;
+      }
     }
   } catch(e) {
     console.error('CSV Save Error:', e);
@@ -7497,6 +7549,10 @@ function runBuyerSellerAdvisor() {
 
   const ce_ltp   = ceMD.ltp   || 0;
   const pe_ltp   = peMD.ltp   || 0;
+  // CE/PE ratio — key signal filter (9-day proven)
+  const cepeRatio = ce_ltp > 0 && pe_ltp > 0 ? ce_ltp / pe_ltp : 1.0;
+  const ceHeavy2  = cepeRatio > 1.15;   // CE expensive → top near → BUY PE 81%
+  const peHeavy2  = cepeRatio < 0.87;   // PE expensive → bottom near → BUY CE
   // Upstox option_greeks.iv is already in % (e.g. 23.5 not 0.235)
   const ce_iv    = ceG.iv    || 0;
   const pe_iv    = peG.iv    || 0;
@@ -7709,7 +7765,7 @@ function runBuyerSellerAdvisor() {
     // 9-day: IV>35 → CE fell 61%, PE fell 67% avg -3.4
     if (sellPE2||sellPE3) finalAdvice = `💰 <b>SELL PE — 82% WIN</b> — IV ${ce_iv.toFixed(0)}%>35+BULL+PCR ${pcr.toFixed(2)}>1.1<br>9-din: 82% PE fell avg -2.8. ${atm} PE sell. Stop: 50%.`;
     else if (sellCE2||sellCE3) finalAdvice = `💰 <b>SELL CE — 57% WIN</b> — IV ${ce_iv.toFixed(0)}%>35+BEAR+PCR ${pcr.toFixed(2)}<0.9<br>9-din: 57% CE fell avg -4.5. ${atm} CE sell. Stop: 50%.`;
-    else if (emaBull2&&pcr>1.0) finalAdvice = `💰 <b>SELL PE (IV>35+BULL)</b> — 9-din: 67% PE fell avg -3.4. ${atm} PE (half). Stop: 50%.`;
+    else if (emaBull2&&pcr>1.0) finalAdvice = `💰 <b>SELL PE (IV>35+BULL)</b> — 9-din: 71% PE fell avg -1.8. ${atm} PE (half). Stop: 50%.`;
     else if (emaBear2) finalAdvice = `💰 <b>SELL CE (IV>35+BEAR)</b> — 9-din: 61% CE fell avg -2.0. ${atm} CE. Stop: 50%.`;
     else finalAdvice = `🔴 <b>STRONG SELLER IV ${ce_iv.toFixed(0)}%>35</b><br>9-din: CE 61%, PE 67% fell. EMA+PCR confirm hone do.`;
     } else if (sellPE2 || sellPE3) {
@@ -7732,12 +7788,12 @@ function runBuyerSellerAdvisor() {
     } else if (emaBull2 && pcr > 1.15) {
       // 9-day KEY: CE/PE < 1.05 = 84% win | CE/PE >= 1.05 = ONLY 24% win!
       if (cepeRatio >= 1.05) {
-        finalAdvice = `🔴 <b>CE BUY AVOID — CE/PE=${cepeRatio.toFixed(2)} ≥ 1.05</b><br>9-din: CE heavy! Sirf 24% CE win. ${ceHeavy2?'CE/PE>1.15 → BUY PE 89% win!':'Wait CE/PE<1.05.'}`;
+        finalAdvice = `🔴 <b>CE BUY AVOID — CE/PE=${cepeRatio.toFixed(2)} ≥ 1.05</b><br>9-din: CE heavy! Sirf 24% CE win. ${ceHeavy2?'CE/PE>1.15 → BUY PE 81% win!':'Wait CE/PE<1.05.'}`;
       } else {
         finalAdvice = `✅ <b>CE BUY 84% WIN — IV ${ce_iv.toFixed(0)}%+BULL+PCR ${pcr.toFixed(2)}>1.15+CE/PE ${cepeRatio.toFixed(2)}<1.05</b><br>9-din: CE/PE filter se 84% win avg +6.25! ${atm} CE. Stop: 40%.`;
       }
     } else if (emaBull2 && pcr > 1.1) {
-      finalAdvice = `🟡 <b>CE POSSIBLE lekin risky — IV ${ce_iv.toFixed(0)}%</b><br>7-din: EMA BULL + PCR ${pcr.toFixed(2)}>1.1 = 60% win. Risky zone hai. <b>Half position only.</b> Tight stop: 35% loss.`;
+      finalAdvice = `🟡 <b>CE POSSIBLE lekin risky — IV ${ce_iv.toFixed(0)}%</b><br>9-din: EMA BULL + PCR ${pcr.toFixed(2)}>1.1 = 60% win. Risky zone hai. <b>Half position only.</b> Tight stop: 35% loss.`;
     } else if (emaBear2 && pcr < 0.85) {
       finalAdvice = `🔴 <b>AVOID PE BUY — IV ${ce_iv.toFixed(0)}% risky + EMA BEAR + PCR ${pcr.toFixed(2)}<0.85</b><br>7-din: Sirf 38% PE win in this condition. Dono side lose. WAIT karo.`;
     } else {
@@ -8068,6 +8124,46 @@ function sendNotification(msg, title, type) {
   }
 }
 
+// ── Annotation cache — rebuilt only when chainData changes ──
+let _annCacheKey2 = '';
+let _annCached    = {};
+
+function buildEmaAnnotations(view) {
+  const ck = (chainData?.length||0)+'_'+(chainData?.[0]?.underlying_spot_price||0).toFixed(0);
+  if (ck === _annCacheKey2 && Object.keys(_annCached).length) return _annCached;
+  _annCacheKey2 = ck;
+  const ann = {};
+  if (!chainData || !chainData.length) { _annCached = ann; return ann; }
+  const liveSpot3 = chainData[0]?.underlying_spot_price || 0;
+  const maxPain3  = calcMaxPain(chainData, liveSpot3);
+  const instrKey3 = document.getElementById('symbolSel')?.value || '';
+  const step3     = INSTRUMENTS[instrKey3]?.step || 50;
+  let mCOI=0, mPOI=0, res3=0, sup3=0;
+  chainData.forEach(d => {
+    if (Math.abs(d.strike_price - liveSpot3) > 2000) return;
+    const coiItem = d.call_options?.market_data?.oi || 0;
+    const poi     = d.put_options?.market_data?.oi  || 0;
+    if (coiItem > mCOI) { mCOI = coiItem; res3 = d.strike_price; }
+    if (poi    > mPOI)  { mPOI = poi;      sup3 = d.strike_price; }
+  });
+  if (res3)      ann.ema_res  = { type:'line', scaleID:'y', value:res3,      borderColor:'rgba(255,61,107,.6)',  borderWidth:1, borderDash:[5,3], label:{display:false} };
+  if (sup3)      ann.ema_sup  = { type:'line', scaleID:'y', value:sup3,      borderColor:'rgba(0,229,160,.6)',   borderWidth:1, borderDash:[5,3], label:{display:false} };
+  if (maxPain3)  ann.ema_mp   = { type:'line', scaleID:'y', value:maxPain3,  borderColor:'rgba(255,208,0,.65)',  borderWidth:1, borderDash:[4,3], label:{display:false} };
+  if (liveSpot3) ann.ema_spot = { type:'line', scaleID:'y', value:liveSpot3, borderColor:'rgba(0,201,255,.45)', borderWidth:1, borderDash:[],    label:{display:false} };
+  const atmRow4   = chainData.find(d => d.strike_price === Math.round(liveSpot3/step3)*step3);
+  const atmCeLtp4 = atmRow4?.call_options?.market_data?.ltp || 0;
+  if (atmCeLtp4 > 0 && liveSpot3 > 5000) {
+    const sl4=liveSpot3-atmCeLtp4, tp1_4=liveSpot3+atmCeLtp4*1.5, tp2_4=liveSpot3+atmCeLtp4*3.0;
+    if (Math.abs(tp1_4-liveSpot3) > liveSpot3*0.002) {
+      ann.ema_sl  = { type:'line', scaleID:'y', value:sl4,   borderColor:'rgba(255,30,60,.4)',  borderWidth:1, borderDash:[3,5], label:{display:false} };
+      ann.ema_tp1 = { type:'line', scaleID:'y', value:tp1_4, borderColor:'rgba(0,229,160,.4)',  borderWidth:1, borderDash:[3,5], label:{display:false} };
+      ann.ema_tp2 = { type:'line', scaleID:'y', value:tp2_4, borderColor:'rgba(0,255,136,.5)',  borderWidth:1.5,borderDash:[4,4], label:{display:false} };
+    }
+  }
+  _annCached = ann;
+  return ann;
+}
+
 function renderEmaChart() {
   const candles = emaAllCandles;
   if (!candles.length) return;
@@ -8078,7 +8174,12 @@ function renderEmaChart() {
   const viewStart= Math.max(0, viewEnd - effectiveBars);
   const view     = candles.slice(viewStart, viewEnd);
   const viewLen  = view.length;
-  const labels   = view.map(c => fmtCandleLabel(c[0], currentTf));
+  // Add 3 empty slots on right for breathing room before y-axis
+  const EXTRA_RIGHT = 3;
+  const labelsBase = view.map(c => fmtCandleLabel(c[0], currentTf));
+  const labels     = [...labelsBase, ...Array(EXTRA_RIGHT).fill('')];
+  // window._candleView stays as view (no empty entries), x2 scale needs adjustment
+  window._extraRight = EXTRA_RIGHT;
   const { datasets, signalsCE, signalsPE, emaCloseFull, emaOpenFull } = buildIndicatorDatasets(candles, viewStart, viewEnd);
 
   const signalBox = document.getElementById('emaSignalBox');
@@ -8152,8 +8253,30 @@ function renderEmaChart() {
   const canvas = document.getElementById('candleCanvas');
   if (!canvas) return;
 
+  // ── Smart render: update existing chart instead of recreate (10x faster) ──
+  if (candleChart && !window._forceChartRebuild) {
+    // Re-register EMA plugins (OI chart might have them in wrong state)
+    try { Chart.register(candleDrawPlugin); } catch(e) {}
+    try { Chart.register(yAxisLabelsPlugin); } catch(e) {}
+    try { Chart.register(tradingViewCrosshairPlugin); } catch(e) {}
+    // Fast path: just update data and annotations
+    window._candleView = view;
+    const _EXTRA = window._extraRight || 3;
+    candleChart.data.labels   = [...labels.slice(0, view.length), ...Array(_EXTRA).fill('')];
+    candleChart.data.datasets = datasets;
+    candleChart.options.plugins.annotation.annotations = buildEmaAnnotations(view);
+    // Update y-axis range
+    const _lows  = view.map(c=>c[3]); const _highs = view.map(c=>c[2]);
+    const _mn    = Math.min(..._lows);  const _mx    = Math.max(..._highs);
+    const _range = Math.max(_mx - _mn, 10);
+    candleChart.options.scales.y.min = _mn - _range*0.15;  // 15% padding = ~20px gap
+    candleChart.options.scales.y.max = _mx + _range*0.15;
+    candleChart.options.scales.x2.max = view.length - 1;
+    candleChart.update('none');  // 'none' = no animation = fastest
+    return;
+  }
+  window._forceChartRebuild = false;
   if (candleChart) { candleChart.destroy(); candleChart = null; }
-  // Re-register EMA-specific plugins
   try { if (window.ChartDataLabels) Chart.register(ChartDataLabels); } catch(e) {}
   try { Chart.register(candleDrawPlugin); } catch(e) {}
   try { Chart.register(tradingViewCrosshairPlugin); } catch(e) {}
@@ -8163,62 +8286,28 @@ function renderEmaChart() {
     data: { labels, datasets },
     options: {
       responsive: true, maintainAspectRatio: false, animation: false,
-      layout: { padding: { top: 2, right: 58, bottom: 2, left: 0 } },
+      layout: { padding: { top: 4, right: 72, bottom: 0, left: 0 } },
       interaction: { mode:'index', intersect:false },
       plugins: {
         datalabels: { display: false },
+        tooltip: { enabled: false },  // Hover tooltip disabled — ohlcBar shows values
         legend:     { display: false },
-        annotation: {
-          annotations: (() => {
-            const ann = {};
-            if (!chainData || !chainData.length) return ann;
-            const liveSpot3 = chainData[0]?.underlying_spot_price || 0;
-            const maxPain3  = calcMaxPain(chainData, liveSpot3);
-            const instrKey3 = document.getElementById('symbolSel')?.value || '';
-            const step3     = INSTRUMENTS[instrKey3]?.step || 50;
-            let mCOI=0, mPOI=0, res3=0, sup3=0;
-            chainData.forEach(d => {
-              if (Math.abs(d.strike_price - liveSpot3) > 2000) return;
-              const coiItem = d.call_options?.market_data?.oi || 0;
-              const poi     = d.put_options?.market_data?.oi  || 0;
-              if (coiItem > mCOI) { mCOI = coiItem; res3 = d.strike_price; }
-              if (poi    > mPOI)  { mPOI = poi;      sup3 = d.strike_price; }
-            });
-            // Lines only - labels drawn by yAxisLabelsPlugin in Y strip
-            if (res3)      ann.ema_res  = { type:'line', scaleID:'y', value:res3,      borderColor:'rgba(255,61,107,.6)',  borderWidth:1, borderDash:[5,3], label:{display:false} };
-            if (sup3)      ann.ema_sup  = { type:'line', scaleID:'y', value:sup3,      borderColor:'rgba(0,229,160,.6)',   borderWidth:1, borderDash:[5,3], label:{display:false} };
-            if (maxPain3)  ann.ema_mp   = { type:'line', scaleID:'y', value:maxPain3,  borderColor:'rgba(255,208,0,.65)',  borderWidth:1, borderDash:[4,3], label:{display:false} };
-            if (liveSpot3) ann.ema_spot = { type:'line', scaleID:'y', value:liveSpot3, borderColor:'rgba(0,201,255,.45)', borderWidth:1, borderDash:[],    label:{display:false} };
-            const atmRow4    = chainData.find(d => d.strike_price === Math.round(liveSpot3/step3)*step3);
-            const atmCeLtp4  = atmRow4?.call_options?.market_data?.ltp || 0;
-            if (atmCeLtp4 > 0 && liveSpot3 > 5000) {
-              const sl4   = liveSpot3 - atmCeLtp4;
-              const tp1_4 = liveSpot3 + atmCeLtp4 * 1.5;
-              const tp2_4 = liveSpot3 + atmCeLtp4 * 3.0;
-              if (Math.abs(tp1_4 - liveSpot3) > liveSpot3 * 0.002) {
-                ann.ema_sl  = { type:'line', scaleID:'y', value:sl4,   borderColor:'rgba(255,30,60,.4)',   borderWidth:1, borderDash:[3,5], label:{display:false} };
-                ann.ema_tp1 = { type:'line', scaleID:'y', value:tp1_4, borderColor:'rgba(0,229,160,.4)',   borderWidth:1, borderDash:[3,5], label:{display:false} };
-                ann.ema_tp2 = { type:'line', scaleID:'y', value:tp2_4, borderColor:'rgba(0,255,136,.45)', borderWidth:1, borderDash:[4,4], label:{display:false} };
-              }
-            }
-            return ann;
-          })(),
-        },
+        annotation: { annotations: buildEmaAnnotations(view) },
         zoom: { pan:{enabled:false}, zoom:{wheel:{enabled:false},pinch:{enabled:false}} },
       },
       scales: {
         x: {
           display: true,
           offset: true,  // Ensures last candle is NOT at edge (half-bar padding)
-          ticks: { color:'rgba(255,255,255,.55)', font:{family:'Space Mono',size:9}, maxTicksLimit:6, maxRotation:0, autoSkip:true },
+          ticks: { color:'rgba(255,255,255,.65)', font:{family:'Space Mono',size:10}, maxTicksLimit:5, maxRotation:0, autoSkip:true },
           grid:  { color:'rgba(255,255,255,.04)' }
         },
-        x2: { display:false, type:'linear', min:0, max:view.length-1 },
+        x2: { display:false, type:'linear', min:0, max:view.length-1+EXTRA_RIGHT },
         y: {
           display:  false,     // completely hidden — yAxisLabelsPlugin draws everything
           position: 'right',
-          min: (() => { const lows=view.map(c=>c[3]); const highs=view.map(c=>c[2]); const mn=Math.min(...lows); const range=Math.max(...highs)-mn; return mn - range*0.08; })(),
-          max: (() => { const lows=view.map(c=>c[3]); const highs=view.map(c=>c[2]); const mx=Math.max(...highs); const range=mx-Math.min(...lows); return mx + range*0.08; })(),
+          min: (() => { const lows=view.map(c=>c[3]); const highs=view.map(c=>c[2]); const mn=Math.min(...lows); const range=Math.max(Math.max(...highs)-mn,10); return mn - range*0.15; })(),
+          max: (() => { const lows=view.map(c=>c[3]); const highs=view.map(c=>c[2]); const mx=Math.max(...highs); const range=Math.max(mx-Math.min(...lows),10); return mx + range*0.15; })(),
         },
       },
       onHover: (e, els, chart) => {
@@ -8291,7 +8380,7 @@ function renderEmaChart() {
 
   // Start live tick
   if (liveTickTimer) clearInterval(liveTickTimer);
-  liveTickTimer = setInterval(updateLiveCandle, 3000);
+  liveTickTimer = setInterval(updateLiveCandle, 1500);  // 1.5s for smoother live candle
 }
 
 
@@ -8404,6 +8493,7 @@ function initDrawingCanvas() {
       _mousePan.active = true;
       _mousePan.startX = e.clientX - rect.left;
       _mousePan.startOffset = emaViewOffset;
+      cc2.style.cursor = 'grabbing';
     });
     cc2.addEventListener('mouseup',    () => { _mousePan.active = false; });
     cc2.addEventListener('mouseleave', () => { _mousePan.active = false; redrawDrawings(); });
@@ -8563,7 +8653,7 @@ function redrawDrawings(mouseX, mouseY) {
       ctx.fillStyle = '#1e3050';
       ctx.fillRect(mouseX - tw2/2 - 4, bottom + 2, tw2 + 8, 16);
       ctx.fillStyle = '#fff';
-      ctx.font = '9px "Space Mono"';
+      ctx.font = '10px "Space Mono"';
       ctx.textAlign = 'center';
       ctx.fillText(label, mouseX, bottom + 10);
     }
@@ -8938,37 +9028,30 @@ function initMobileTouch() {
       const dx = e.touches[0].clientX - e.touches[1].clientX;
       const dy = e.touches[0].clientY - e.touches[1].clientY;
       const dist = Math.sqrt(dx*dx + dy*dy);
-      const scale = dist / (_touchState.lastDist || dist);
+      const lastD = _touchState.lastDist || dist;
       _touchState.lastDist = dist;
+      // Ignore tiny movements (< 2px) to avoid jitter
+      if (Math.abs(dist - lastD) < 2) { _touchState.lastDist = lastD; }
+      // Damped scale: 65% factor for smoother feel
+      const rawScale = dist / lastD;
+      const dampedScale = 1 + (rawScale - 1) * 0.65;
+      const scale = dampedScale;
 
-      if (scale !== 1) {
+      if (Math.abs(scale - 1) > 0.001) {
         const total = emaAllCandles.length;
         // Horizontal zoom
         let newBars = Math.round(EMA_VIEW_BARS / scale);
-        // Don't allow zooming out beyond total candles when total < default
         const minBars = Math.min(10, total);
-        const maxBars = Math.max(total, 300);
+        const maxBars = Math.max(total, 500);
         EMA_VIEW_BARS = Math.max(minBars, Math.min(maxBars, newBars));
         // Keep offset valid
         const effectiveBars = Math.min(EMA_VIEW_BARS, total);
         const maxOff = Math.max(0, total - effectiveBars);
         emaViewOffset = Math.min(emaViewOffset, maxOff);
-        
-        // Vertical zoom - adjust Y scale based on pinch
-        if (candleChart && initialYMin !== null && initialYMax !== null) {
-          const midY = (initialYMin + initialYMax) / 2;
-          const rangeY = initialYMax - initialYMin;
-          const newRangeY = rangeY / scale;
-          const yMin = midY - newRangeY / 2;
-          const yMax = midY + newRangeY / 2;
-          candleChart.options.scales.y.min = yMin;
-          candleChart.options.scales.y.max = yMax;
-        }
-        
-        if (candleChart) { try { candleChart.update('none'); } catch(er) {} }
+
         if (!_touchState._rafPending) {
           _touchState._rafPending = true;
-          requestAnimationFrame(() => { _touchState._rafPending=false; renderEmaChart(); });
+          requestAnimationFrame(() => { _touchState._rafPending = false; renderEmaChart(); });
         }
       }
 
@@ -9306,7 +9389,7 @@ async function upstoxGet(url) {
       ]);
       if (result) return result;
     } catch(e) {
-      console.warn(`upstoxGet proxy ${i} failed:`, e.message);
+      if (i > 0) console.warn(`upstoxGet proxy ${i} failed:`, e.message);
       lastErr = e;
     }
   }
@@ -9650,18 +9733,43 @@ function updateLiveCandle() {
     }
   }
 
-  // Re-render chart (only if not already rendering)
-  if (!window._chartRendering) {
-    window._chartRendering = true;
-    renderEmaChart();
-    window._chartRendering = false;
+  // Re-render chart using RAF for smooth live candle
+  if (!window._liveRafPending) {
+    window._liveRafPending = true;
+    requestAnimationFrame(() => {
+      window._liveRafPending = false;
+      // Fast path: update chart data directly without full rebuild
+      if (candleChart && !window._forceChartRebuild) {
+        const total = emaAllCandles.length;
+        const effectiveBars = Math.min(EMA_VIEW_BARS, total);
+        const viewEnd   = Math.min(total, total - emaViewOffset);
+        const viewStart = Math.max(0, viewEnd - effectiveBars);
+        const view = emaAllCandles.slice(viewStart, viewEnd);
+        window._candleView = view;
+        // Update labels and datasets
+        const _EXTRA2 = window._extraRight || 3;
+        const labels = [...view.map(c => fmtCandleLabel(c[0], currentTf)), ...Array(_EXTRA2).fill('')];
+        const { datasets } = buildIndicatorDatasets(emaAllCandles, viewStart, viewEnd);
+        candleChart.data.labels   = labels;
+        candleChart.data.datasets = datasets;
+        // Update y range
+        const lows=view.map(c=>c[3]), highs=view.map(c=>c[2]);
+        const mn=Math.min(...lows), mx=Math.max(...highs), rng=mx-mn;
+        const _pad = Math.max(rng * 0.15, 5);
+        candleChart.options.scales.y.min = mn - _pad;  // 15% = ~20px gap
+        candleChart.options.scales.y.max = mx + _pad;
+        candleChart.update('none');
+      } else {
+        renderEmaChart();
+      }
+    });
   }
 }
 
 function startLiveTick() {
   if (liveTickTimer) clearInterval(liveTickTimer);
   // Update every 3 seconds for smooth live candle
-  liveTickTimer = setInterval(updateLiveCandle, 3000);
+  liveTickTimer = setInterval(updateLiveCandle, 1500);  // 1.5s for smoother live candle
 }
 
 function stopLiveTick() {
