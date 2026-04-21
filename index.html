@@ -1502,7 +1502,7 @@ tr.atm-row td.strike-cell { color:var(--accent); }
         </div>
       </div>
       <div class="btn-row">
-        <button class="btn btn-primary" onclick="loginWithToken()" style="width:100%;padding:14px;font-size:15px;letter-spacing:2px;margin-top:8px;position:relative;z-index:20;">🚀 LOGIN → LOAD OPTION CHAIN</button>
+        <button class="btn btn-primary" id="loginBtn" onclick="loginWithToken()" style="width:100%;padding:14px;font-size:15px;letter-spacing:2px;margin-top:8px;position:relative;z-index:20;">🚀 LOGIN → LOAD OPTION CHAIN</button>
       </div>
       <div class="auth-steps">
         <div class="auth-steps-title">HOW TO GET TOKEN QUICKLY</div>
@@ -3006,6 +3006,12 @@ document.addEventListener('DOMContentLoaded', function() {
   document.querySelectorAll('.tf-btn').forEach(b => b.classList.remove('active-tf'));
   const d5m = document.querySelector('[data-tf="5minute"]');
   if (d5m) d5m.classList.add('active-tf');
+
+  // Fix login button onclick
+  const loginBtn = document.getElementById('loginBtn');
+  if (loginBtn && !loginBtn.onclick) {
+    loginBtn.onclick = loginWithToken;
+  }
 
   try {
     const cur = document.getElementById('symbolSel')?.value || 'NSE_INDEX|Nifty 50';
@@ -4928,13 +4934,17 @@ let activeStrategies = [
   },
 ];
 
-/* ══ OLD BEST STRATEGY - No Filters, Pure PCR ═════════════════════
-   Simple & Best: PCR is KING
+/* ══ MARKET DIRECTION FOLLOW STRATEGY ═════════════════════
+   MARKET JIS TAHAF JAA RAHA HAI, USS TAFAR ENTRY!
    
-   PCR > 1.0 = BUY CE (Put heavy = Market UP)
-   PCR < 1.0 = BUY PE (Call heavy = Market DOWN)
+   BUY (market direction ke saath):
+   - PCR > 1.0 → PUT HEAVY → Market UP → BUY CE ✅
+   - PCR < 1.0 → CALL HEAVY → Market DOWN → BUY PE ✅
    
-   No filters - This was 73.7% winning!
+   SELL (sideways/neutral):
+   - PCR 0.9-1.1 → Sideways → SELL for theta decay
+   
+   Strength ke hisab se entry - market ke saath!
  ══════════════════════════════════════════════════ */
 function calcCsvStrategySignals(candles, emaCloseFull, emaOpenFull, liveIV, livePCR, liveOI, maxPain = 24000) {
   const signals = { buyCE:[], buyPE:[], sellCE:[], sellPE:[], noTrade:[] };
@@ -4942,50 +4952,24 @@ function calcCsvStrategySignals(candles, emaCloseFull, emaOpenFull, liveIV, live
   if (!emaCloseFull || !emaOpenFull || n < 4) return signals;
 
   for (let i = 3; i < n; i++) {
-    const ec = emaCloseFull[i], eo = emaOpenFull[i];
-    const ec1= emaCloseFull[i-1], eo1= emaOpenFull[i-1];
-    if (ec==null||eo==null||ec1==null||eo1==null) continue;
-
-    const spot = candles[i] ? candles[i][4] : 22000;
-    const prevSpot = candles[i-1] ? candles[i-1][4] : spot;
-    const spotUp = spot > prevSpot;
-    const spotDown = spot < prevSpot;
-    
-    const maxPainBelowSpot = maxPain < spot;
-    const maxPainAboveSpot = maxPain > spot;
-
-    const bullCross = ec1 <= eo1 && ec > eo;
-    const bearCross = ec1 >= eo1 && ec < eo;
-    const isBullish = ec > eo;
-    const isBearish = ec < eo;
-    
-    if (!bullCross && !bearCross) continue;
-    
-    const iv = liveIV || 20;
     const pcr = livePCR || 1.0;
     
-    const cepe = liveOI ? (liveOI.atmCeLtp > 0 && liveOI.atmPeLtp > 0
-                  ? liveOI.atmCeLtp / liveOI.atmPeLtp : 1) : 1;
-
-    // === SIMPLE: PCR IS KING ===
+    // BUY signals (market direction ke saath)
+    if (pcr > 1.0) { signals.buyCE.push(i); continue; }  // Put heavy = UP
+    if (pcr < 1.0) { signals.buyPE.push(i); continue; }  // Call heavy = DOWN
     
-    // BUY CE: PCR > 1.0 (Put heavy)
-    if (pcr > 1.0) {
-      signals.buyCE.push(i); continue;
+    // SELL signals (sideways - theta decay)
+    if (pcr >= 0.9 && pcr <= 1.1) {
+      if (pcr >= 1.0) { signals.sellPE.push(i); }
+      else { signals.sellCE.push(i); }
+      continue;
     }
     
-    // BUY PE: PCR < 1.0 (Call heavy)
-    if (pcr < 1.0) {
-      signals.buyPE.push(i); continue;
-    }
-    
-    // No signal
     signals.noTrade.push(i);
   }
   return signals;
 }
 
-// ── populateCandleStrikes (alias) ────────────────────
 function populateCandleStrikes() {
   // Only load EMA chart if not already loaded for current symbol+TF
   const instrKey = document.getElementById('symbolSel')?.value || '';
@@ -9237,6 +9221,13 @@ function initWithToken(token) {
   if (mainApp) mainApp.style.display = 'block';
   if (logoutBtn) logoutBtn.style.display = 'flex';
   onSymbolChange();
+  // Auto ON after login (30s refresh)
+  fetchChain();
+  if (autoTimer) clearInterval(autoTimer);
+  autoTimer = setInterval(fetchChain, 30000);
+  startLiveTick();
+  const autoBtn = document.getElementById('autoBtn');
+  if (autoBtn) { autoBtn.textContent = 'AUTO: ON (30s)'; autoBtn.className = 'btn btn-primary btn-sm'; }
   setTimeout(() => { if (typeof loadNews === 'function') loadNews(); }, 1000);
 }
 
@@ -9250,7 +9241,11 @@ function logout() {
   if (mainApp) mainApp.style.display = 'none';
   if (authScreen) authScreen.style.display = 'flex';
   if (logoutBtn) logoutBtn.style.display = 'none';
+  // Stop auto refresh
   if (autoTimer) clearInterval(autoTimer);
+  if (liveTickTimer) clearInterval(liveTickTimer);
+  const autoBtn = document.getElementById('autoBtn');
+  if (autoBtn) { autoBtn.textContent = 'AUTO: OFF'; autoBtn.className = 'btn btn-ghost btn-sm'; }
 }
 
 if (accessToken) setTimeout(() => initWithToken(accessToken), 100);
