@@ -3646,17 +3646,28 @@ function buildChartData() {
 }
 
 function renderChart(data, type = 'oi') {
-  if (!data || !data.strikes || !data.strikes.length) return;
+  if (!data || !data.strikes || !data.strikes.length) {
+    console.log('No chart data');
+    return;
+  }
   
   chartDataCache = data;
   const chartSec = document.getElementById('chartSection');
   if (chartSec) chartSec.style.display = 'block';
 
   const canvas = document.getElementById('oiChartCanvas');
-  if (!canvas) return;
+  if (!canvas) {
+    console.log('No canvas');
+    return;
+  }
   
   const ctx = canvas.getContext('2d');
-  if (!ctx) return;
+  if (!ctx) {
+    console.log('No ctx');
+    return;
+  }
+  
+  console.log('Building chart with type:', type, 'data length:', data?.strikes?.length);
   
   if (oiChart) { 
     try { oiChart.destroy(); } catch(e) {}
@@ -4928,7 +4939,7 @@ let activeStrategies = [
    SELL CE: IV>25 + EMA BEAR + PCR<0.9   (57% win)
    NO TRADE: EMA flips > 8 (choppy), OR DTE=0
 ══════════════════════════════════════════════════ */
-function calcCsvStrategySignals(candles, emaCloseFull, emaOpenFull, liveIV, livePCR, liveOI) {
+function calcCsvStrategySignals(candles, emaCloseFull, emaOpenFull, liveIV, livePCR, liveOI, maxPain = 24000) {
   const signals = { buyCE:[], buyPE:[], sellCE:[], sellPE:[], noTrade:[] };
   const n = candles.length;
   if (!emaCloseFull || !emaOpenFull || n < 4) return signals;
@@ -4948,63 +4959,72 @@ function calcCsvStrategySignals(candles, emaCloseFull, emaOpenFull, liveIV, live
     const ec1= emaCloseFull[i-1], eo1= emaOpenFull[i-1];
     if (ec==null||eo==null||ec1==null||eo1==null) continue;
 
-    // Get candle timestamp for time filter
-    const candleTs = candles[i] ? new Date(candles[i][0]).getTime() : 0;
-    const now = Date.now();
-    const minsSinceCandle = (now - candleTs) / 60000;
+    // Get current spot from candle close
+    const spot = candles[i] ? candles[i][4] : 22000;
     
-    // TIME FILTER: Skip last 30 min of market (high volatility)
-    // Market closes 15:30, so skip signals after 15:00
-    if (minsSinceCandle < 30) {
-      // Still in last 30 min - either skip or mark as weaker
-      // For now, allow but with extra caution
-    }
+    // MaxPain filter: Trade opposite to MaxPain direction
+    const maxPainBelowSpot = maxPain < spot;
+    const maxPainAboveSpot = maxPain > spot;
 
     const bullCross = ec1 <= eo1 && ec > eo;
     const bearCross = ec1 >= eo1 && ec < eo;
 
     // Only generate signal on EMA cross event
     if (!bullCross && !bearCross) continue;
-
-    // Define these BEFORE use
-    const iv   = liveIV  || 20;
-    const pcr  = livePCR || 1.0;
+    
+    // Define these
+    const iv = liveIV || 20;
+    const pcr = livePCR || 1.0;
     if (isChoppy && iv > 18) { signals.noTrade.push(i); continue; }
-    // CE/PE ratio: KEY filter (9-day data proven)
-    // cepe < 1.05 + BUY_CE = 84% win; cepe >= 1.05 = only 24% win!
-    // cepe > 1.15 + BUY_PE = 89% win
+    
+    // CE/PE ratio
     const cepe = liveOI ? (liveOI.atmCeLtp > 0 && liveOI.atmPeLtp > 0
                   ? liveOI.atmCeLtp / liveOI.atmPeLtp : 1) : 1;
-    const ceNotHeavy  = cepe < 1.05;   // CE not overpriced → safe to buy CE
-    const ceHeavyTop  = cepe > 1.15;   // CE heavy → top near → BUY PE
+    const ceNotHeavy = cepe < 1.05;
+    const ceHeavyTop = cepe > 1.15;
 
-    // ── SELL signals (IV>25) — highest confidence ──
+    // SELL signals (IV>25)
     if (iv > 25) {
-      if (bullCross && pcr > 1.1) { signals.sellPE.push(i); continue; }  // 82%
-      if (bearCross && pcr < 0.9) { signals.sellCE.push(i); continue; }  // 57%
-      if (iv > 35 && bullCross)   { signals.sellPE.push(i); continue; }  // 67%
-      if (iv > 35 && bearCross)   { signals.sellCE.push(i); continue; }  // 61%
+      if (bullCross && pcr > 1.1) { 
+        if (maxPainBelowSpot) { signals.sellPE.push(i); continue; }
+        signals.sellPE.push(i); continue; 
+      }
+      if (bearCross && pcr < 0.9) { signals.sellCE.push(i); continue; }
+      if (iv > 35 && bullCross)   { signals.sellPE.push(i); continue; }
+      if (iv > 35 && bearCross)   { signals.sellCE.push(i); continue; }
       signals.noTrade.push(i); continue;
     }
 
-    // ── CE/PE ratio override: strongest signal (89% win) ──
-    if (ceHeavyTop) { signals.buyPE.push(i); continue; }  // TOP near → BUY PE
+    // CE/PE ratio override
+    if (ceHeavyTop) { 
+      if (maxPainBelowSpot) { signals.buyPE.push(i); continue; }
+      signals.buyPE.push(i); continue; 
+    }
 
-    // ── Very risky 15-18%: no trade ──
+    // Very risky 15-18%
     if (iv > 15 && iv <= 18) { signals.noTrade.push(i); continue; }
 
-    // ── Risky 18-25%: CE only with ratio filter ──
+    // Risky 18-25%
     if (iv > 18 && iv <= 25) {
-      if (bullCross && pcr > 1.15 && ceNotHeavy) { signals.buyCE.push(i); continue; }  // 84%!
-      if (bearCross && pcr < 0.9)                 { signals.noTrade.push(i); continue; }
+      if (bullCross && pcr > 1.15 && ceNotHeavy) { 
+        if (maxPainAboveSpot) { signals.buyCE.push(i); continue; }
+        signals.buyCE.push(i); continue; 
+      }
+      if (bearCross && pcr < 0.9) { signals.noTrade.push(i); continue; }
       signals.noTrade.push(i); continue;
     }
 
-    // ── Safe zone IV<15 (83% win) ──
+    // Safe zone IV<15
     if (iv <= 15) {
-      if (bullCross && pcr > 1.0 && ceNotHeavy) { signals.buyCE.push(i); continue; }
-      if (bearCross && pcr < 1.0)                { signals.buyPE.push(i); continue; }
-      if (cepe < 0.87)                           { signals.buyCE.push(i); continue; }  // PE heavy = bottom
+      if (bullCross && pcr > 1.0 && ceNotHeavy) { 
+        if (maxPainAboveSpot) { signals.buyCE.push(i); continue; }
+        signals.buyCE.push(i); continue; 
+      }
+      if (bearCross && pcr < 1.0) { 
+        if (maxPainBelowSpot) { signals.buyPE.push(i); continue; }
+        signals.buyPE.push(i); continue; 
+      }
+      if (cepe < 0.87) { signals.buyCE.push(i); continue; }
       signals.noTrade.push(i);
     }
   }
@@ -5339,18 +5359,35 @@ async function loadEmaChart() {
     if (!raw.length) throw new Error('Data nahi mila — token valid hai?');
     candles = needsAgg ? aggregateCandles(raw, aggMin) : raw;
 
-    // Inject live price as latest candle
+    // Inject live price as latest candle - UPDATE existing, don't add new
     let liveSpot = 0;
     if (chainData?.length) liveSpot = chainData[0]?.underlying_spot_price || 0;
     if (!liveSpot) {
       const spotEl = document.getElementById('spotPrice') || document.getElementById('statSpot');
       if (spotEl) liveSpot = parseFloat(spotEl.textContent?.replace(/,/g, '')) || 0;
     }
-    // Add live candle - check if already exists first
-    // Add LIVE candle with current price (this is the last candle)
+    console.log('Adding live candle - liveSpot:', liveSpot, 'candles len:', candles?.length, 'chainData len:', chainData?.length);
     if (liveSpot > 0 && candles && candles.length) {
-      const liveTs = new Date().toISOString();
-      candles.push([liveTs, liveSpot, liveSpot, liveSpot, liveSpot, 0]);
+      const lastCandle = candles[candles.length - 1];
+      // Check if last candle is already a live candle (has current timestamp)
+      const now = new Date();
+      const lastTs = lastCandle ? new Date(lastCandle[0]) : null;
+      const isLiveCandle = lastTs && (now - lastTs) < 60000; // Within last 60 seconds
+      
+      if (isLiveCandle && lastCandle) {
+        // Update existing live candle instead of adding new
+        lastCandle[2] = Math.max(lastCandle[2], liveSpot); // high
+        lastCandle[3] = Math.min(lastCandle[3], liveSpot); // low
+        lastCandle[4] = liveSpot; // close
+        console.log('Live candle UPDATED at load:', lastCandle[0], 'spot:', liveSpot);
+      } else {
+        // Add new live candle only if no recent live candle exists
+        const liveTs = new Date().toISOString();
+        candles.push([liveTs, liveSpot, liveSpot, liveSpot, liveSpot, 0]);
+        console.log('Live candle added at load:', liveTs, 'spot:', liveSpot);
+      }
+    } else {
+      console.log('No live candle - liveSpot:', liveSpot, 'candles:', candles?.length);
     }
   } catch(e) {
     const errMsg = e.message || 'Unknown error';
@@ -6210,9 +6247,10 @@ function buildIndicatorDatasets(candles, viewStart, viewEnd) {
       if (!strat.visible) return;  // skip heavy compute if hidden
       const liveIVnow  = liveOI ? (liveOI.atmCeIv || 20) : 20;
       const livePCRnow = liveOI ? liveOI.pcr : 1.0;
-      const _ck = candles.length+'_'+liveIVnow.toFixed(0)+'_'+livePCRnow.toFixed(2);
+      const maxPainNow = chainData ? calcMaxPain(chainData, chainData[0]?.underlying_spot_price || 22000) : 24000;
+      const _ck = candles.length+'_'+liveIVnow.toFixed(0)+'_'+livePCRnow.toFixed(2)+'_'+maxPainNow;
       if (!window._csvSigCache || window._csvSigCacheKey !== _ck) {
-        window._csvSigCache    = calcCsvStrategySignals(candles, emaCloseFull, emaOpenFull, liveIVnow, livePCRnow, liveOI);
+        window._csvSigCache    = calcCsvStrategySignals(candles, emaCloseFull, emaOpenFull, liveIVnow, livePCRnow, liveOI, maxPainNow);
         window._csvSigCacheKey = _ck;
       }
       const csvSigs = window._csvSigCache;
@@ -8247,12 +8285,17 @@ function renderEmaChart() {
     candleChart.data.labels   = labels;
     candleChart.data.datasets = datasets;
     candleChart.options.plugins.annotation.annotations = buildEmaAnnotations(view);
-    // Update y-axis range
-    const _lows  = view.map(c=>c[3]); const _highs = view.map(c=>c[2]);
+    // Update y-axis range - include live spot price - CENTER candle
+    const _livePrice = emaAllCandles[emaAllCandles.length - 1]?.[4] || 0;
+    let _lows  = view.map(c=>c[3]); let _highs = view.map(c=>c[2]);
+    if (_livePrice > 0) { _lows.push(_livePrice); _highs.push(_livePrice); }
     const _mn    = Math.min(..._lows);  const _mx    = Math.max(..._highs);
     const _range = Math.max(_mx - _mn, 10);
-    candleChart.options.scales.y.min = _mn - _range*0.18;
-    candleChart.options.scales.y.max = _mx + _range*0.18;
+    // Center candle in middle with more padding
+    candleChart.options.scales.y.min = _mn - _range*0.25;
+    candleChart.options.scales.y.max = _mx + _range*0.25;
+    // X-axis: 15 candles gap between last candle and Y-axis
+    candleChart.options.scales.x.max = view.length - 1 + 15;
     candleChart.update('none');
     return;
   }
@@ -8261,7 +8304,8 @@ function renderEmaChart() {
   // Clear canvas before creating new chart
   const ctx = canvas.getContext('2d');
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  try { if (window.ChartDataLabels) Chart.register(ChartDataLabels); } catch(e) {}
+  // ChartDataLabels disabled - causing errors, not needed
+  // try { if (window.ChartDataLabels) Chart.register(ChartDataLabels); } catch(e) {}
   try { Chart.register(candleDrawPlugin); } catch(e) {}
   try { Chart.register(tradingViewCrosshairPlugin); } catch(e) {}
   try { Chart.register(yAxisLabelsPlugin); } catch(e) {}
@@ -8282,16 +8326,19 @@ function renderEmaChart() {
       scales: {
         x: {
           display: true,
-          offset: true,
-          ticks: { color:'rgba(255,255,255,.65)', font:{family:'Space Mono',size:10}, maxTicksLimit:6, maxRotation:0, autoSkip:true },
+          offset: false,
+          ticks: { color:'rgba(255,255,255,.65)', font:{family:'Space Mono',size:9}, maxTicksLimit:5, maxRotation:0, autoSkip:true },
           grid:  { color:'rgba(255,255,255,.04)' },
+          min: 0,
+          max: view.length - 1 + 15,
         },
-        x2: { display:false, type:'linear', min:0, max:view.length-1 },
+        x2: { display:false, type:'linear', min:0, max:view.length - 1 + 15 },
         y: {
           display:  false,     // completely hidden — yAxisLabelsPlugin draws everything
           position: 'right',
-          min: (() => { const lows=view.map(c=>c[3]); const highs=view.map(c=>c[2]); const mn=Math.min(...lows); const range=Math.max(Math.max(...highs)-mn,10); return mn - range*0.15; })(),
-          max: (() => { const lows=view.map(c=>c[3]); const highs=view.map(c=>c[2]); const mx=Math.max(...highs); const range=Math.max(mx-Math.min(...lows),10); return mx + range*0.15; })(),
+          // Center candle in middle with more padding
+          min: (() => { const lows=view.map(c=>c[3]); const highs=view.map(c=>c[2]); const mn=Math.min(...lows); const range=Math.max(Math.max(...highs)-mn,10); return mn - range*0.25; })(),
+          max: (() => { const lows=view.map(c=>c[3]); const highs=view.map(c=>c[2]); const mx=Math.max(...highs); const range=Math.max(mx-Math.min(...lows),10); return mx + range*0.25; })(),
         },
       },
       onHover: (e, els, chart) => {
@@ -9673,42 +9720,38 @@ function updateLiveCandle() {
   }
   if (!liveSpot) return;
 
-  // Add NEW live candle every time (will show as last candle)
+  // UPDATE live candle (not add new) - update EVERY tick for real-time feel
   if (emaAllCandles.length > 0 && liveSpot > 0) {
-    const newTs = new Date().toISOString();
-    emaAllCandles.push([newTs, liveSpot, liveSpot, liveSpot, liveSpot, 0]);
+    const last = emaAllCandles[emaAllCandles.length - 1];
+    // Update high/low with current price
+    last[2] = Math.max(last[2], liveSpot);
+    last[3] = Math.min(last[3], liveSpot);
+    last[4] = liveSpot; // close - THIS makes candle move up/down
+    // Update timestamp every tick for real-time feel
+    last[0] = new Date().toISOString();
+    console.log('Live candle updated:', last[4], 'time:', new Date(last[0]).toLocaleTimeString(), 'candles:', emaAllCandles.length);
   }
 
-  // Re-render chart using RAF for smooth live candle
-  if (!window._liveRafPending) {
-    window._liveRafPending = true;
-    requestAnimationFrame(() => {
-      window._liveRafPending = false;
-      // Fast path: update chart data directly without full rebuild
-      if (candleChart && !window._forceChartRebuild) {
-        const total = emaAllCandles.length;
-        const effectiveBars = Math.min(EMA_VIEW_BARS, total);
-        const viewEnd   = Math.min(total, total - emaViewOffset);
-        const viewStart = Math.max(0, viewEnd - effectiveBars);
-        const view = emaAllCandles.slice(viewStart, viewEnd);
-        window._candleView = view;
-        // Update labels and datasets
-        const labels = view.map(c => fmtCandleLabel(c[0], currentTf));
-        const { datasets } = buildIndicatorDatasets(emaAllCandles, viewStart, viewEnd);
-        candleChart.data.labels   = labels;
-        candleChart.data.datasets = datasets;
-        // Update y range
-        const lows=view.map(c=>c[3]), highs=view.map(c=>c[2]);
-        const mn=Math.min(...lows), mx=Math.max(...highs), rng=mx-mn;
-        const _pad = Math.max(rng * 0.18, 5);
-        candleChart.options.scales.y.min = mn - _pad;
-        candleChart.options.scales.y.max = mx + _pad;
-        candleChart.options.scales.x.max = view.length - 1;
-        candleChart.update('none');
-      } else {
-        renderEmaChart();
-      }
-    });
+  // Simple live candle update - just update chart data without rebuild
+  if (candleChart) {
+    const total = emaAllCandles.length;
+    const effectiveBars = Math.min(EMA_VIEW_BARS, total);
+    const viewEnd   = Math.min(total, total - emaViewOffset);
+    const viewStart = Math.max(0, viewEnd - effectiveBars);
+    const view = emaAllCandles.slice(viewStart, viewEnd);
+    window._candleView = view;
+    // Update y-axis range with live price - CENTER candle in middle
+    const livePrice = emaAllCandles[emaAllCandles.length - 1]?.[4] || 0;
+    let lows=view.map(c=>c[3]), highs=view.map(c=>c[2]);
+    if (livePrice > 0) { lows.push(livePrice); highs.push(livePrice); }
+    const mn=Math.min(...lows), mx=Math.max(...highs), rng=mx-mn;
+    // More padding to center candle in middle
+    const _pad = Math.max(rng * 0.25, 5);
+    candleChart.options.scales.y.min = mn - _pad;
+    candleChart.options.scales.y.max = mx + _pad;
+    // 15 candles gap between last candle and Y-axis
+    candleChart.options.scales.x.max = view.length - 1 + 15;
+    candleChart.update('none');
   }
 }
 
