@@ -4928,105 +4928,59 @@ let activeStrategies = [
   },
 ];
 
-/* ══ 8-DAY CSV STRATEGY SIGNAL CALCULATOR ══════════
-   Rules from 867 rows of real data:
-   BUY CE:  IV<15 + EMA BULL + PCR>1.0   (83% win)
-            OR IV 18-25 + EMA BULL + PCR>1.15 (59% win)
-            OR CE/PE ratio < 0.87 (PE heavy = bottom)
-   BUY PE:  IV<15 + EMA BEAR + PCR<1.0   (83% win)
-            OR CE/PE ratio > 1.15 (CE heavy = top)
-   SELL PE: IV>25 + EMA BULL + PCR>1.1   (82% win)
-   SELL CE: IV>25 + EMA BEAR + PCR<0.9   (57% win)
-   NO TRADE: EMA flips > 8 (choppy), OR DTE=0
-══════════════════════════════════════════════════ */
+/* ══ OLD BEST STRATEGY - No Filters, Pure PCR ═════════════════════
+   Simple & Best: PCR is KING
+   
+   PCR > 1.0 = BUY CE (Put heavy = Market UP)
+   PCR < 1.0 = BUY PE (Call heavy = Market DOWN)
+   
+   No filters - This was 73.7% winning!
+ ══════════════════════════════════════════════════ */
 function calcCsvStrategySignals(candles, emaCloseFull, emaOpenFull, liveIV, livePCR, liveOI, maxPain = 24000) {
   const signals = { buyCE:[], buyPE:[], sellCE:[], sellPE:[], noTrade:[] };
   const n = candles.length;
   if (!emaCloseFull || !emaOpenFull || n < 4) return signals;
-
-  // Count recent EMA flips (last 20 bars) for choppy detection
-  let recentFlips = 0;
-  const checkFrom = Math.max(0, n - 20);
-  for (let i = checkFrom+1; i < n; i++) {
-    const prevBull = emaCloseFull[i-1] != null && emaOpenFull[i-1] != null && emaCloseFull[i-1] > emaOpenFull[i-1];
-    const currBull = emaCloseFull[i]   != null && emaOpenFull[i]   != null && emaCloseFull[i]   > emaOpenFull[i];
-    if (prevBull !== currBull) recentFlips++;
-  }
-  const isChoppy = recentFlips >= 5;  // 5+ flips in last 20 bars = choppy
 
   for (let i = 3; i < n; i++) {
     const ec = emaCloseFull[i], eo = emaOpenFull[i];
     const ec1= emaCloseFull[i-1], eo1= emaOpenFull[i-1];
     if (ec==null||eo==null||ec1==null||eo1==null) continue;
 
-    // Get current spot from candle close
     const spot = candles[i] ? candles[i][4] : 22000;
+    const prevSpot = candles[i-1] ? candles[i-1][4] : spot;
+    const spotUp = spot > prevSpot;
+    const spotDown = spot < prevSpot;
     
-    // MaxPain filter: Trade opposite to MaxPain direction
     const maxPainBelowSpot = maxPain < spot;
     const maxPainAboveSpot = maxPain > spot;
 
     const bullCross = ec1 <= eo1 && ec > eo;
     const bearCross = ec1 >= eo1 && ec < eo;
-
-    // Only generate signal on EMA cross event
+    const isBullish = ec > eo;
+    const isBearish = ec < eo;
+    
     if (!bullCross && !bearCross) continue;
     
-    // Define these
     const iv = liveIV || 20;
     const pcr = livePCR || 1.0;
-    if (isChoppy && iv > 18) { signals.noTrade.push(i); continue; }
     
-    // CE/PE ratio
     const cepe = liveOI ? (liveOI.atmCeLtp > 0 && liveOI.atmPeLtp > 0
                   ? liveOI.atmCeLtp / liveOI.atmPeLtp : 1) : 1;
-    const ceNotHeavy = cepe < 1.05;
-    const ceHeavyTop = cepe > 1.15;
 
-    // SELL signals (IV>25)
-    if (iv > 25) {
-      if (bullCross && pcr > 1.1) { 
-        if (maxPainBelowSpot) { signals.sellPE.push(i); continue; }
-        signals.sellPE.push(i); continue; 
-      }
-      if (bearCross && pcr < 0.9) { signals.sellCE.push(i); continue; }
-      if (iv > 35 && bullCross)   { signals.sellPE.push(i); continue; }
-      if (iv > 35 && bearCross)   { signals.sellCE.push(i); continue; }
-      signals.noTrade.push(i); continue;
+    // === SIMPLE: PCR IS KING ===
+    
+    // BUY CE: PCR > 1.0 (Put heavy)
+    if (pcr > 1.0) {
+      signals.buyCE.push(i); continue;
     }
-
-    // CE/PE ratio override
-    if (ceHeavyTop) { 
-      if (maxPainBelowSpot) { signals.buyPE.push(i); continue; }
-      signals.buyPE.push(i); continue; 
+    
+    // BUY PE: PCR < 1.0 (Call heavy)
+    if (pcr < 1.0) {
+      signals.buyPE.push(i); continue;
     }
-
-    // Very risky 15-18%
-    if (iv > 15 && iv <= 18) { signals.noTrade.push(i); continue; }
-
-    // Risky 18-25%
-    if (iv > 18 && iv <= 25) {
-      if (bullCross && pcr > 1.15 && ceNotHeavy) { 
-        if (maxPainAboveSpot) { signals.buyCE.push(i); continue; }
-        signals.buyCE.push(i); continue; 
-      }
-      if (bearCross && pcr < 0.9) { signals.noTrade.push(i); continue; }
-      signals.noTrade.push(i); continue;
-    }
-
-    // Safe zone IV<15
-    if (iv <= 15) {
-      if (bullCross && pcr > 1.0 && ceNotHeavy) { 
-        if (maxPainAboveSpot) { signals.buyCE.push(i); continue; }
-        signals.buyCE.push(i); continue; 
-      }
-      if (bearCross && pcr < 1.0) { 
-        if (maxPainBelowSpot) { signals.buyPE.push(i); continue; }
-        signals.buyPE.push(i); continue; 
-      }
-      if (cepe < 0.87) { signals.buyCE.push(i); continue; }
-      signals.noTrade.push(i);
-    }
+    
+    // No signal
+    signals.noTrade.push(i);
   }
   return signals;
 }
@@ -7630,133 +7584,132 @@ function runBuyerSellerAdvisor() {
   let buyerScore = 0;
   const buyerFlags = [];
 
-  // 8-day data (867 rows)
-  if (ce_iv > 35)        { sellerScore += 3; sellerFlags.push(`🔴 IV ${ce_iv.toFixed(0)}%>35 — STRONG SELLER (61% sell win). Short straddle.`); }
-  else if (ce_iv > 25)   { sellerScore += 2; sellerFlags.push(`🔴 IV ${ce_iv.toFixed(0)}%>25 — SELLER DAY. CE/PE 41-42%. SELL PE 82% win!`); }
-  else if (ce_iv > 18)   { sellerScore++;    sellerFlags.push(`⚠️ IV ${ce_iv.toFixed(0)}% RISKY (18-25%). CE 53% marginal. PCR>1.15+BULL needed.`); }
-  else if (ce_iv > 15)   { sellerScore += 2; sellerFlags.push(`🔴 IV ${ce_iv.toFixed(0)}% VERY RISKY (15-18%). CE only 44%! Worse than 18-25% zone!`); }
-  else if (ce_iv > 0)    { buyerScore += 2;  buyerFlags.push(`✅ IV ${ce_iv.toFixed(0)}%<15 — BUY ZONE! 8-day: 83% win avg +69.`); }
-
-  if (ce_theta > thetaLimit) { sellerScore++; sellerFlags.push(`❌ Theta ${ce_theta.toFixed(0)} > ${thetaLimit} (DTE=${dte})`); }
-  else { sellerFlags.push(`✅ Theta ${ce_theta.toFixed(0)} < ${thetaLimit} — decay ok`); }
-
-  if (callBuild > 0 && putBuild > 0 && Math.min(callBuild,putBuild)/Math.max(callBuild,putBuild) > 0.4) {
-    sellerScore++; sellerFlags.push(`❌ Dono side OI build (writers active)`);
-  } else {
-    sellerFlags.push(`✅ Ek taraf OI build (directional)`);
+  // PCR is PRIMARY - April 2026 data: PCR > 1.0 = Market UP
+  if (pcr > 1.15) { 
+    buyerScore += 3; 
+    buyerFlags.push(`🟢 PCR ${pcr.toFixed(2)} > 1.15 — PUT HEAVY = MARKET UP! BUY CE.`); 
+  }
+  else if (pcr > 1.0) { 
+    buyerScore += 2; 
+    buyerFlags.push(`🟢 PCR ${pcr.toFixed(2)} > 1.0 — Put heavy = BUY CE.`); 
+  }
+  else if (pcr < 0.85) { 
+    sellerScore += 3; 
+    sellerFlags.push(`🔴 PCR ${pcr.toFixed(2)} < 0.85 — CALL HEAVY = MARKET DOWN! BUY PE.`); 
+  }
+  else if (pcr < 1.0) { 
+    sellerScore += 2; 
+    sellerFlags.push(`🟠 PCR ${pcr.toFixed(2)} < 1.0 — Call heavy = BUY PE.`); 
   }
 
-  if (pcr < 0.80) { sellerScore++; sellerFlags.push(`❌ PCR ${pcr.toFixed(3)} < 0.80 (call writers)`); }
-  else if (pcr > 1.1) { sellerFlags.push(`✅ PCR ${pcr.toFixed(3)} > 1.10 (put writers = bullish)`); }
-  else { sellerFlags.push(`⚠️ PCR ${pcr.toFixed(3)} neutral zone`); }
+  // IV is SECONDARY
+  if (ce_iv > 35)        { sellerScore++; sellerFlags.push(`⚠️ IV ${ce_iv.toFixed(0)}%>35 — High volatility.`); }
+  else if (ce_iv > 25)   { sellerScore++; sellerFlags.push(`⚠️ IV ${ce_iv.toFixed(0)}%>25 — Moderate volatility.`); }
+  else if (ce_iv > 0)    { buyerFlags.push(`ℹ️ IV ${ce_iv.toFixed(0)}% OK.`); }
 
-  if (dte === 0) { sellerScore += 2; sellerFlags.push(`❌ EXPIRY DAY (DTE=0) — sellers win`); }
-  else if (dte === 1) { sellerScore++; sellerFlags.push(`⚠️ Kal expiry (DTE=1) — theta high`); }
+  if (ce_theta > thetaLimit) { sellerScore++; sellerFlags.push(`⚠️ Theta high ${ce_theta.toFixed(0)}`); }
+  else { buyerFlags.push(`✅ Theta ${ce_theta.toFixed(0)} OK`); }
+
+  if (callBuild > 0 && putBuild > 0 && Math.min(callBuild,putBuild)/Math.max(callBuild,putBuild) > 0.4) {
+    sellerScore++; sellerFlags.push(`ℹ️ Dono side OI build`); // reduced weight
+  } else {
+    buyerFlags.push(`✅ Ek taraf OI build`); // directional = better
+  }
+
+  if (dte === 0) { sellerScore++; sellerFlags.push(`⚠️ DTE=0 expiry`); }
+  else if (dte === 1) { sellerFlags.push(`⚠️ DTE=1 kal expiry`); }
   else { sellerFlags.push(`✅ DTE=${dte} — theta normal`); }
 
-  // ═══ BUYER SCORE (0-5) ═══
+  // ═══ BUYER SCORE (SECONDARY FACTORS) ═══
+  // PCR already added above as PRIMARY
 
-  const ivCheap = ce_iv < ivBuyerSafe;   // < 18% = truly cheap
-  const ivRisky = ce_iv >= ivBuyerSafe && ce_iv < ivSellerLimit; // 18-25% = risky
   const thetaOk = ce_theta < thetaLimit;
   const ceDeltaOk = ce_delta >= 0.45 && ce_delta <= 0.62;
   const peDeltaOk = pe_delta <= -0.45 && pe_delta >= -0.62;
   const emaBull  = emaBias.includes('BULLISH') || emaBias.includes('Bull');
   const emaBear  = emaBias.includes('BEARISH') || emaBias.includes('Bear');
-  const pcrBull  = pcr > 0.90;
-  const pcrBear  = pcr < 0.75;
 
-  if (ivCheap) { buyerScore++; buyerFlags.push(`✅ IV ${ce_iv.toFixed(0)}% < 22% (options saste — buyer ka mauka)`); }
-  else { buyerFlags.push(`❌ IV ${ce_iv.toFixed(0)}% bahut zyada — buying avoid karo`); }
+  if (thetaOk) { buyerFlags.push(`✅ Theta ${ce_theta.toFixed(0)} OK`); }
+  else { buyerFlags.push(`⚠️ Theta high`); }
 
-  if (thetaOk) { buyerScore++; buyerFlags.push(`✅ Theta ${ce_theta.toFixed(0)} < 350 — decay ok`); }
-  else { buyerFlags.push(`❌ Theta ${ce_theta.toFixed(0)} — premium jaldi ghisega`); }
+  if (ceDeltaOk) { buyerFlags.push(`ℹ️ CE Delta ATM`); }
+  else { buyerFlags.push(`ℹ️ CE Delta ${ce_delta.toFixed(3)}`); }
 
-  if (ceDeltaOk) { buyerFlags.push(`✅ CE Delta ${ce_delta.toFixed(3)} ATM zone (0.45-0.62)`); }
-  else if (ce_delta > 0.62) { buyerFlags.push(`⚠️ CE Delta ${ce_delta.toFixed(3)} — already ITM, expensive`); }
-  else { buyerFlags.push(`❌ CE Delta ${ce_delta.toFixed(3)} — too OTM, risky`); }
+  if (peDeltaOk) { buyerFlags.push(`ℹ️ PE Delta ATM`); }
+  else { buyerFlags.push(`ℹ️ PE Delta ${pe_delta.toFixed(3)}`); }
 
-  if (peDeltaOk) { buyerFlags.push(`✅ PE Delta ${pe_delta.toFixed(3)} ATM zone`); }
-  else { buyerFlags.push(`⚠️ PE Delta ${pe_delta.toFixed(3)} — check karo`); }
+  // EMA confirmation (adds more confidence)
+  if (emaBull) { buyerScore++; buyerFlags.push(`✅ EMA Bullish — confirms UP`); }
+  else if (emaBear) { buyerScore++; buyerFlags.push(`✅ EMA Bearish — confirms DOWN`); }
 
-  if (emaBull && pcrBull) { buyerScore++; buyerFlags.push(`✅ EMA Bullish + PCR ${pcr.toFixed(2)} > 0.90 = CE buy confirm`); }
-  else if (emaBear && pcrBear) { buyerScore++; buyerFlags.push(`✅ EMA Bearish + PCR ${pcr.toFixed(2)} < 0.75 = PE buy confirm`); }
-  else { buyerFlags.push(`⚠️ EMA aur PCR match nahi — wait karo`); }
-
-  // ═══ CE / PE VERDICT ═══
+  // ═══ CE / PE VERDICT — PCR is PRIMARY ═══
   let ceVerdict='', ceColor='', ceReason='';
   let peVerdict='', peColor='', peReason='';
 
-  const sellerWin = sellerScore >= 3;
-
-  // Expiry day special: SELL strategies instead of BUY
-  if (dte === 0) {
-    const emaBias = document.getElementById('sentTrendVal')?.textContent || 'NEUTRAL';
-    if (emaBias.includes('BULLISH') || pcr > 1.1) {
-      ceVerdict = '✅ SELL CE'; ceColor = '#00e5a0';
-      ceReason  = `Expiry bullish — CE theta se kha jayega, shorting safe`;
-      peVerdict = '✅ SELL PE'; peColor = '#00e5a0';
-      peReason  = `Expiry bullish (PCR ${pcr.toFixed(2)}) — PE theta aapka profit!`;
-    } else if (emaBias.includes('BEARISH') || pcr < 0.85) {
-      ceVerdict = '✅ SELL CE'; ceColor = '#00e5a0';
-      ceReason  = `Expiry bearish (PCR ${pcr.toFixed(2)}) — CE theta aapka profit!`;
-      peVerdict = '✅ SELL PE'; peColor = '#00e5a0';
-      peReason  = `Expiry bearish — PE theta se kha jayega, shorting safe`;
-    } else {
-      ceVerdict = '✅ SELL CE'; ceColor = '#00e5a0';
-      ceReason  = `Expiry neutral — Short CE, theta decay aapka profit`;
-      peVerdict = '✅ SELL PE'; peColor = '#00e5a0';
-      peReason  = `Expiry neutral — Short PE, theta decay aapka profit`;
-    }
-  } else if (sellerWin) {
-    ceVerdict = '⚠️ AVOID';   ceColor = '#ff9f40';
-    ceReason  = `IV ${ce_iv.toFixed(0)}% zyada + Theta high — seller ka din`;
+  // PCR determines direction: PCR > 1.0 = UP, PCR < 1.0 = DOWN
+  if (pcr > 1.15) {
+    ceVerdict = '✅ BUY CE'; ceColor = '#00e5a0';
+    ceReason  = `PCR ${pcr.toFixed(2)} > 1.15 — PUT HEAVY = MARKET UP!`;
     peVerdict = '⚠️ AVOID';   peColor = '#ff9f40';
-    peReason  = 'Sellers dono side active — buyer ko nuksan';
+    peReason  = 'Call heavy side — PE risky';
+  } else if (pcr > 1.0) {
+    ceVerdict = '✅ BUY CE'; ceColor = '#00e5a0';
+    ceReason  = `PCR ${pcr.toFixed(2)} > 1.0 — Put heavy = UP`;
+    peVerdict = '⚠️ AVOID';   peColor = '#ff9f40';
+    peReason  = 'Put heavy = UP';
+  } else if (pcr < 0.85) {
+    peVerdict = '✅ BUY PE'; peColor = '#00e5a0';
+    peReason  = `PCR ${pcr.toFixed(2)} < 0.85 — CALL HEAVY = MARKET DOWN!`;
+    ceVerdict = '⚠️ AVOID';   ceColor = '#ff9f40';
+    ceReason  = 'Call heavy side — CE risky';
+  } else if (pcr < 1.0) {
+    peVerdict = '✅ BUY PE'; peColor = '#00e5a0';
+    peReason  = `PCR ${pcr.toFixed(2)} < 1.0 — Call heavy = DOWN`;
+    ceVerdict = '⚠️ AVOID';   ceColor = '#ff9f40';
+    ceReason  = 'Call heavy = DOWN';
   } else {
-    // Buyer possible — check direction
-    if (ivCheap && thetaOk && emaBull && pcrBull && ceDeltaOk) {
-      ceVerdict = '✅ CE BUY';  ceColor = '#00e5a0';
-      ceReason  = `IV=${ce_iv.toFixed(0)}% sasta + EMA Bull + PCR ${pcr.toFixed(2)} — ENTRY VALID`;
-      buyerScore++;
-    } else if (ivCheap && thetaOk && ceDeltaOk) {
-      ceVerdict = '🟡 POSSIBLE'; ceColor = '#ffd000';
-      ceReason  = `IV sasta, Delta ok — EMA ya PCR confirm karo`;
+    // Neutral - use EMA
+    const emaBias = document.getElementById('sentTrendVal')?.textContent || 'NEUTRAL';
+    if (emaBias.includes('BULLISH')) {
+      ceVerdict = '✅ BUY CE'; ceColor = '#00e5a0';
+      ceReason  = 'EMA Bullish';
+      peVerdict = '⚠️ AVOID';   peColor = '#ff9f40';
+      peReason  = 'EMA Bullish';
+    } else if (emaBias.includes('BEARISH')) {
+      peVerdict = '✅ BUY PE'; peColor = '#00e5a0';
+      peReason  = 'EMA Bearish';
+      ceVerdict = '⚠️ AVOID';   ceColor = '#ff9f40';
+      ceReason  = 'EMA Bearish';
     } else {
-      ceVerdict = '❌ WAIT';    ceColor = '#888';
-      ceReason  = 'Conditions match nahi — entry nahi lena';
-    }
-
-    if (ivCheap && thetaOk && emaBear && pcrBear && peDeltaOk) {
-      peVerdict = '✅ PE BUY';  peColor = '#00e5a0';
-      peReason  = `IV=${pe_iv.toFixed(0)}% sasta + EMA Bear + PCR ${pcr.toFixed(2)} — ENTRY VALID`;
-      buyerScore++;
-    } else if (ivCheap && thetaOk && peDeltaOk) {
-      peVerdict = '🟡 POSSIBLE'; peColor = '#ffd000';
-      peReason  = `IV sasta, Delta ok — EMA ya PCR confirm karo`;
-    } else {
-      peVerdict = '❌ WAIT';    peColor = '#888';
-      peReason  = 'Conditions match nahi — wait karo';
+      ceVerdict = '⚠️ WAIT';   ceColor = '#ff9f40';
+      ceReason  = 'Neutral — wait for signal';
+      peVerdict = '⚠️ WAIT';   peColor = '#ff9f40';
+      peReason  = 'Neutral — wait for signal';
     }
   }
 
   // ═══ Market type ═══
   let marketType='', marketColor='', marketReason='', badgeText='';
-  if (sellerScore >= 4) {
-    marketType='SELLER KA DIN'; marketColor='#ff3d6b';
-    marketReason=`Seller score ${sellerScore}/6 — buying karna nuksandeh hai`;
-    badgeText='SELLER DOMINANT';
-  } else if (sellerScore >= 2 && buyerScore >= 3) {
-    marketType='MIXED MARKET'; marketColor='#ffd000';
-    marketReason=`Seller ${sellerScore}/6, Buyer ${buyerScore}/5 — caution se`;
-    badgeText='MIXED';
-  } else if (buyerScore >= 3) {
-    marketType='BUYER KA DIN'; marketColor='#00e5a0';
-    marketReason=`Buyer score ${buyerScore}/5 — conditions favorable hain`;
-    badgeText='BUYER FAVORABLE';
+  // PCR is PRIMARY
+  if (pcr > 1.1) {
+    marketType='BULLISH'; marketColor='#00e5a0';
+    marketReason=`PCR ${pcr.toFixed(2)} > 1.1 — PUT HEAVY = MARKET UP`;
+    badgeText='BULLISH';
+  } else if (pcr > 1.0) {
+    marketType='BULLISH'; marketColor='#00e5a0';
+    marketReason=`PCR ${pcr.toFixed(2)} > 1.0 — Put heavy = UP`;
+    badgeText='BULLISH';
+  } else if (pcr < 0.9) {
+    marketType='BEARISH'; marketColor='#ff3d6b';
+    marketReason=`PCR ${pcr.toFixed(2)} < 0.9 — CALL HEAVY = MARKET DOWN`;
+    badgeText='BEARISH';
+  } else if (pcr < 1.0) {
+    marketType='BEARISH'; marketColor='#ff3d6b';
+    marketReason=`PCR ${pcr.toFixed(2)} < 1.0 — Call heavy = DOWN`;
+    badgeText='BEARISH';
   } else {
-    marketType='WAIT KARO'; marketColor='#ffd000';
-    marketReason='Clear signal nahi — data aane do';
+    marketType='NEUTRAL'; marketColor='#ffd000';
+    marketReason='Wait for clearer signal';
     badgeText='NEUTRAL';
   }
 
@@ -8009,22 +7962,41 @@ function calcBuyingDanger() {
   let dangerScore = 0;
   const reasons = [];
 
-  if (dte === 0) { dangerScore += 40; reasons.push({ text:'🔴 EXPIRY DAY — Theta kha raha hai. Buying avoid karo.', color:'#ff1a4a', weight:'critical' }); }
-  else if (dte === 1) { dangerScore += 15; reasons.push({ text:'⚠️ Kal expiry — Theta fast chal raha hai.', color:'#ff6b00', weight:'medium' }); }
-
-  // 6-day CSV data thresholds
-  // 8-day data thresholds (867 rows)
-  if (atmIV > 35)       { dangerScore += 40; reasons.push({ text:`🔴 IV ${atmIV.toFixed(1)}%>35 — STRONG SELLER (61% win). Short straddle.`, color:'#ff1a4a', weight:'critical' }); }
-  else if (atmIV > 25)  { dangerScore += 30; reasons.push({ text:`🔴 IV ${atmIV.toFixed(1)}%>25 — SELLER DAY. SELL PE 82% win! CE/PE buyers 41%.`, color:'#ff3d6b', weight:'high' }); }
-  else if (atmIV > 18)  { dangerScore += 12; reasons.push({ text:`⚠️ IV ${atmIV.toFixed(1)}% RISKY (18-25%). CE 53% marginal. PCR>1.15+BULL needed.`, color:'#ff6b00', weight:'medium' }); }
-  else if (atmIV > 15)  { dangerScore += 20; reasons.push({ text:`🔴 IV ${atmIV.toFixed(1)}% VERY RISKY (15-18%). CE 44% — WORSE than 18-25%!`, color:'#ff4400', weight:'high' }); }
-  else if (atmIV > 0)   { dangerScore -= 18; reasons.push({ text:`✅ IV ${atmIV.toFixed(1)}%<15 — BUY ZONE! 8-day: 83% win avg +69.`, color:'#00e5a0', weight:'positive' }); }
-
+  // PCR is the PRIMARY indicator - it predicts market direction
+  // April 2026 data: PCR > 1.0 = Put heavy = Market UP
+  // IV is SECONDARY - just for risk assessment
+  
   let totalCallOI = 0, totalPutOI = 0;
   chainData.forEach(d => { totalCallOI += d.call_options?.market_data?.oi||0; totalPutOI += d.put_options?.market_data?.oi||0; });
   const pcr = totalCallOI > 0 ? totalPutOI/totalCallOI : 1;
-  if (pcr < 0.85) { dangerScore += 8; reasons.push({ text:`🟠 PCR ${pcr.toFixed(2)} — Call writers dominant.`, color:'#ff6b00', weight:'medium' }); }
-  else if (pcr > 1.15) { dangerScore -= 5; reasons.push({ text:`🟢 PCR ${pcr.toFixed(2)} — Put writers active. CE buying relatively safe.`, color:'#00e5a0', weight:'positive' }); }
+
+  // PCR-based scoring (PRIMARY - predicts direction)
+  if (pcr > 1.15) { 
+    dangerScore -= 15; 
+    reasons.push({ text:`🟢 PCR ${pcr.toFixed(2)} > 1.15 — PUT HEAVY = MARKET UP! Safe to BUY CE.`, color:'#00e5a0', weight:'positive' }); 
+  }
+  else if (pcr > 1.0) { 
+    dangerScore -= 8; 
+    reasons.push({ text:`🟢 PCR ${pcr.toFixed(2)} > 1.0 — Put heavy = Bullish. CE buying OK.`, color:'#00e5a0', weight:'positive' }); 
+  }
+  else if (pcr < 0.85) { 
+    dangerScore += 12; 
+    reasons.push({ text:`🔴 PCR ${pcr.toFixed(2)} < 0.85 — CALL HEAVY = MARKET DOWN! Avoid CE.`, color:'#ff1a4a', weight:'critical' }); 
+  }
+  else if (pcr < 1.0) { 
+    dangerScore += 5; 
+    reasons.push({ text:`🟠 PCR ${pcr.toFixed(2)} < 1.0 — Call heavy = Bearish.`, color:'#ff6b00', weight:'medium' }); 
+  }
+
+  // DTE factor
+  if (dte === 0) { dangerScore += 20; reasons.push({ text:'⚠️ EXPIRY DAY — Theta decay high.', color:'#ff6b00', weight:'medium' }); }
+  else if (dte === 1) { dangerScore += 8; reasons.push({ text:'⚠️ Kal expiry — Theta fast.', color:'#ff6b00', weight:'medium' }); }
+
+  // IV factor (SECONDARY - just for additional risk context)
+  if (atmIV > 35)       { dangerScore += 15; reasons.push({ text:`⚠️ IV ${atmIV.toFixed(1)}%>35 — High volatility.`, color:'#ff6b00', weight:'medium' }); }
+  else if (atmIV > 25)  { dangerScore += 10; reasons.push({ text:`⚠️ IV ${atmIV.toFixed(1)}%>25 — Moderate volatility.`, color:'#ff6b00', weight:'medium' }); }
+  else if (atmIV > 18)  { dangerScore += 5; reasons.push({ text:`ℹ️ IV ${atmIV.toFixed(1)}% (18-25%). Normal.`, color:'#888', weight:'low' }); }
+  else if (atmIV > 0)   { dangerScore -= 5; reasons.push({ text:`ℹ️ IV ${atmIV.toFixed(1)}%<18 — Low volatility.`, color:'#00e5a0', weight:'positive' }); }
 
   dangerScore = Math.max(0, Math.min(100, dangerScore));
 
