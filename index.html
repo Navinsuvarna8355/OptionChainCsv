@@ -4065,8 +4065,8 @@ function renderPriceAction() {
   const highs  = data.map(c => c.high);
   const lows   = data.map(c => c.low);
 
-  const yMin  = Math.min(...lows)   * 0.995;
-  const yMax  = Math.max(...highs)  * 1.005;
+  const yMin  = Math.min(...lows)   * 0.98;
+  const yMax  = Math.max(...highs)  * 1.02;
 
   const bullC = 'rgba(0,229,160,0.85)';
   const bearC = 'rgba(255,61,107,0.85)';
@@ -5166,19 +5166,22 @@ function aggregateCandles(candles1m, nMin) {
   while (i < candles1m.length) {
     const base   = candles1m[i];
     const baseTs = new Date(base[0]);
-    const minOfDay = baseTs.getHours() * 60 + baseTs.getMinutes();
+    const minOfDay = baseTs.getUTCHours() * 60 + baseTs.getUTCMinutes();
     const boundary = Math.floor(minOfDay / nMin) * nMin;
     let o = base[1], h = base[2], l = base[3], c = base[4], vol = base[5]||0;
     let j = i + 1;
     while (j < candles1m.length) {
       const next = candles1m[j];
       const nTs = new Date(next[0]);
-      const nm  = nTs.getHours() * 60 + nTs.getMinutes();
+      const nm  = nTs.getUTCHours() * 60 + nTs.getUTCMinutes();
       if (Math.floor(nm / nMin) !== Math.floor(boundary / nMin) || nTs.toDateString() !== baseTs.toDateString()) break;
       h = Math.max(h, next[2]); l = Math.min(l, next[3]); c = next[4]; vol += next[5]||0; j++;
     }
-    // Use first candle timestamp as the aggregate timestamp (original behavior)
-    out.push([base[0], o, h, l, c, vol, base[6]||0]);
+    // Use START of period timestamp for the aggregate (proper alignment for 5m/15m)
+    const startTs = new Date(baseTs);
+    startTs.setUTCMinutes(Math.floor(startTs.getUTCMinutes() / nMin) * nMin);
+    startTs.setUTCSeconds(0);
+    out.push([startTs.toISOString(), o, h, l, c, vol, base[6]||0]);
     i = j;
   }
   return out;
@@ -8290,8 +8293,8 @@ function renderEmaChart() {
           display:  false,     // completely hidden — yAxisLabelsPlugin draws everything
           position: 'right',
           // Center candle in middle with more padding
-          min: (() => { const lows=view.map(c=>c[3]); const highs=view.map(c=>c[2]); const mn=Math.min(...lows); const range=Math.max(Math.max(...highs)-mn,10); return mn - range*0.25; })(),
-          max: (() => { const lows=view.map(c=>c[3]); const highs=view.map(c=>c[2]); const mx=Math.max(...highs); const range=Math.max(mx-Math.min(...lows),10); return mx + range*0.25; })(),
+          min: (() => { const lows=view.map(c=>c[3]); const highs=view.map(c=>c[2]); const mn=Math.min(...lows); const range=Math.max(Math.max(...highs)-mn,10); return mn - range*0.35; })(),
+          max: (() => { const lows=view.map(c=>c[3]); const highs=view.map(c=>c[2]); const mx=Math.max(...highs); const range=Math.max(mx-Math.min(...lows),10); return mx + range*0.35; })(),
         },
       },
       onHover: (e, els, chart) => {
